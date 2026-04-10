@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LyL Presupuestos · Paisajismo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --verde: #7a9055;
+    --verde-dark: #5a6e3a;
+    --verde-light: #f0f4ea;
+    --verde-mid: #d4e0bf;
+    --text: #1e2018;
+    --text-soft: #5a6050;
+    --text-hint: #9aa08a;
+    --bg: #fafaf7;
+    --white: #ffffff;
+    --border: #e2e8d5;
+    --border-dark: #c8d4b0;
+    --danger: #c0392b;
+    --warning-bg: #fff8e6;
+    --warning-border: #e6c96a;
+    --warning-text: #7a5a10;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 1px 4px rgba(30,32,24,0.07);
+    --shadow-md: 0 4px 16px rgba(30,32,24,0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--verde);
+    padding: 0 1.5rem;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar-logo img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(255,255,255,0.15);
+  }
+  .topbar-title {
+    color: white;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    letter-spacing: 0.01em;
+  }
+  .topbar-sub {
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: -2px;
+  }
+
+  /* MAIN LAYOUT */
+  .container { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-hint);
+    margin-bottom: 1rem;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-dark);
+    background: var(--white);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn:hover { background: var(--verde-light); border-color: var(--verde); }
+  .btn-primary {
+    background: var(--verde);
+    border-color: var(--verde);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--verde-dark); border-color: var(--verde-dark); }
+  .btn-danger { color: var(--danger); border-color: #f4c4c0; }
+  .btn-danger:hover { background: #fff0ef; border-color: var(--danger); }
+  .btn-ghost { border-color: transparent; background: transparent; }
+  .btn-ghost:hover { background: var(--verde-light); border-color: transparent; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-lg { padding: 11px 22px; font-size: 15px; }
+
+  /* INPUTS */
+  input, select, textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--white);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--verde);
+  }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+  .input-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-hint);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .field { margin-bottom: 12px; }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+  }
+  .badge-borrador { background: #f0f0ec; color: #6a6a5a; }
+  .badge-enviado { background: #fff4d6; color: #8a6010; }
+  .badge-aprobado { background: #eaf3e0; color: #3a7020; }
+  .badge-rechazado { background: #fff0ef; color: #a02020; }
+
+  /* LISTA DE PRESUPUESTOS */
+  .ppto-list { }
+  .ppto-item {
+    display: grid;
+    grid-template-columns: 44px 1fr auto auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 1.5rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .ppto-item:last-child { border-bottom: none; }
+  .ppto-item:hover { background: var(--verde-light); }
+  .ppto-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--verde-light);
+    border: 1px solid var(--verde-mid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--verde-dark);
+    flex-shrink: 0;
+  }
+  .ppto-name { font-size: 14px; font-weight: 500; }
+  .ppto-sub { font-size: 12px; color: var(--text-soft); margin-top: 1px; }
+  .ppto-fecha { font-size: 12px; color: var(--text-hint); white-space: nowrap; }
+  .ppto-total { font-size: 14px; font-weight: 600; text-align: right; white-space: nowrap; }
+
+  /* HEADER DEL PRESUPUESTO */
+  .ppto-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .ppto-header-title { font-size: 18px; font-weight: 500; flex: 1; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: -1px;
+  }
+  .tab {
+    padding: 7px 14px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    color: var(--text-soft);
+    border-bottom: none;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--verde); background: var(--verde-light); }
+  .tab.active {
+    color: var(--verde-dark);
+    background: var(--white);
+    border-color: var(--border);
+    border-bottom: 1px solid var(--white);
+    margin-bottom: -1px;
+  }
+
+  /* ITEMS TABLE */
+  .item-header {
+    display: grid;
+    grid-template-columns: 1fr 65px 100px 100px 32px;
+    gap: 8px;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .item-row {
+    display: grid;
+    grid-template-columns: 1fr 65px 100px 100px 32px;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .item-row:last-child { border-bottom: none; }
+  .col-label { font-size: 11px; color: var(--text-hint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .item-desc { font-size: 13px; }
+  .item-price { font-size: 13px; text-align: right; color: var(--text-soft); }
+  .item-total { font-size: 13px; font-weight: 600; text-align: right; }
+  .item-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-hint);
+    font-size: 16px;
+    padding: 2px;
+    line-height: 1;
+    transition: color 0.1s;
+    text-align: center;
+  }
+  .item-del:hover { color: var(--danger); }
+
+  /* TOTAL BAR */
+  .total-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--verde-light);
+    border-radius: var(--radius);
+    margin-top: 12px;
+  }
+  .total-bar-label { font-size: 12px; font-weight: 600; color: var(--text-soft); }
+  .total-bar-val { font-size: 15px; font-weight: 700; color: var(--verde-dark); }
+
+  /* RESUMEN FINAL */
+  .resumen-card {
+    background: var(--white);
+    border: 1.5px solid var(--verde-mid);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .resumen-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+  }
+  .resumen-label { font-size: 13px; color: var(--text-soft); }
+  .resumen-val { font-size: 13px; font-weight: 500; }
+  .resumen-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+  .resumen-total { font-size: 22px; font-weight: 700; color: var(--verde-dark); }
+
+  /* INTERNO BOX */
+  .interno-box {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .interno-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warning-text);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .comm-row {
+    display: grid;
+    grid-template-columns: 110px 90px 1fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .comm-name { font-size: 13px; font-weight: 500; }
+  .comm-val { font-size: 13px; font-weight: 600; text-align: right; color: var(--verde-dark); }
+  .comm-input-wrap { display: flex; align-items: center; gap: 4px; }
+  .comm-input-wrap input { width: 60px; text-align: center; }
+  .comm-pct { font-size: 12px; color: var(--text-soft); }
+
+  /* METRICS */
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .metric {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--text-hint); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+  .metric-val { font-size: 20px; font-weight: 700; color: var(--text); }
+  .metric-sub { font-size: 11px; color: var(--text-soft); margin-top: 2px; }
+
+  /* STATUS selector */
+  .status-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .status-btn {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-dark);
+    background: var(--white);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .status-btn:hover { background: var(--verde-light); }
+  .status-btn.active-borrador { background: #f0f0ec; color: #6a6a5a; border-color: #c8c8b8; }
+  .status-btn.active-enviado { background: #fff4d6; color: #8a6010; border-color: #ddb930; }
+  .status-btn.active-aprobado { background: #eaf3e0; color: #3a7020; border-color: #7ab040; }
+  .status-btn.active-rechazado { background: #fff0ef; color: #a02020; border-color: #d07070; }
+
+  /* NOTAS */
+  .nota-section { margin-bottom: 14px; }
+  .nota-section .input-label { margin-bottom: 5px; }
+
+  /* ACCIÓN BAR */
+  .accion-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+    margin-top: 0.5rem;
+  }
+
+  /* WHATSAPP BTN */
+  .btn-whatsapp {
+    background: #25d366;
+    border-color: #20b858;
+    color: white;
+    font-weight: 600;
+  }
+  .btn-whatsapp:hover { background: #1eb854; border-color: #1aa34a; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-hint);
+  }
+  .empty-state-icon { font-size: 42px; margin-bottom: 12px; }
+  .empty-state-title { font-size: 16px; font-weight: 500; color: var(--text-soft); margin-bottom: 6px; }
+  .empty-state-sub { font-size: 13px; margin-bottom: 1.5rem; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  /* HINT */
+  .hint { font-size: 12px; color: var(--text-hint); margin-top: 4px; }
+
+  /* TOP ROW */
+  .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 10px; }
+  .top-row h2 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; }
+
+  @media (max-width: 600px) {
+    .item-header, .item-row { grid-template-columns: 1fr 55px 80px 32px; }
+    .item-header .col-label:nth-child(3), .item-row .item-price { display: none; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .ppto-item { grid-template-columns: 36px 1fr auto; }
+    .ppto-fecha { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <img id="logo-img" src="" alt="LyL Macetas">
+    <div>
+      <div class="topbar-title">LyL Presupuestos</div>
+      <div class="topbar-sub">Paisajismo</div>
+    </div>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="showScreen('nuevo')" id="topbar-nuevo-btn">+ Nuevo</button>
+</div>
+
+<div class="container">
+
+  <!-- ========== LISTA ========== -->
+  <div id="screen-lista" class="screen active">
+    <div class="top-row">
+      <h2>Presupuestos</h2>
+      <button class="btn btn-primary" onclick="showScreen('nuevo')">+ Nuevo presupuesto</button>
+    </div>
+
+    <div class="metrics" id="metrics-bar">
+      <div class="metric">
+        <div class="metric-label">Total</div>
+        <div class="metric-val" id="m-total">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Aprobados</div>
+        <div class="metric-val" id="m-aprobados">$0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Pendientes</div>
+        <div class="metric-val" id="m-pendientes">$0</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0">
+      <div id="lista-container">
+        <div class="empty-state">
+          <div class="empty-state-icon">🌿</div>
+          <div class="empty-state-title">Sin presupuestos todavía</div>
+          <div class="empty-state-sub">Creá tu primer presupuesto</div>
+          <button class="btn btn-primary" onclick="showScreen('nuevo')">+ Nuevo presupuesto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== NUEVO ========== -->
+  <div id="screen-nuevo" class="screen">
+    <div class="ppto-header">
+      <button class="btn btn-ghost" onclick="showScreen('lista')">← Volver</button>
+      <span class="ppto-header-title">Nuevo presupuesto</span>
+    </div>
+    <div class="card">
+      <div class="section-title">Datos del proyecto</div>
+      <div class="grid-2">
+        <div class="field">
+          <label class="input-label">Cliente</label>
+          <input type="text" id="new-cliente" placeholder="Nombre del cliente">
+        </div>
+        <div class="field">
+          <label class="input-label">Proyecto / Dirección</label>
+          <input type="text" id="new-proyecto" placeholder="Ej: Terraza Palermo, Jardín Olivos">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label class="input-label">Tipo de trabajo</label>
+          <select id="new-tipo">
+            <option>Llave en mano</option>
+            <option>Solo macetas y plantas</option>
+            <option>Solo diseño / dirección</option>
+            <option>Mantenimiento</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="input-label">Teléfono / WhatsApp cliente</label>
+          <input type="text" id="new-tel" placeholder="Ej: +54 9 11 1234-5678">
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn" onclick="showScreen('lista')">Cancelar</button>
+      <button class="btn btn-primary btn-lg" onclick="crearPpto()">Crear y agregar ítems →</button>
+    </div>
+  </div>
+
+  <!-- ========== VER / EDITAR ========== -->
+  <div id="screen-ver" class="screen">
+    <div class="ppto-header">
+      <button class="btn btn-ghost" onclick="showScreen('lista')">← Lista</button>
+      <span class="ppto-header-title" id="ver-title">Presupuesto</span>
+      <div id="ver-badge"></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(this,'tab-items')">Ítems y totales</button>
+      <button class="tab" onclick="switchTab(this,'tab-interno')">⚠ Interno</button>
+      <button class="tab" onclick="switchTab(this,'tab-notas')">Notas</button>
+      <button class="tab" onclick="switchTab(this,'tab-info')">Info</button>
+    </div>
+
+    <!-- TAB ITEMS -->
+    <div id="tab-items">
+
+      <!-- PLANTAS -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div class="section-title" style="margin:0">1. Plantas</div>
+          <button class="btn btn-sm" onclick="addItem('plantas')">+ Ítem</button>
+        </div>
+        <div class="item-header">
+          <div class="col-label">Descripción</div>
+          <div class="col-label" style="text-align:center">Cant.</div>
+          <div class="col-label" style="text-align:right">P. unit.</div>
+          <div class="col-label" style="text-align:right">Subtotal</div>
+          <div></div>
+        </div>
+        <div id="items-plantas"></div>
+        <div class="total-bar"><span class="total-bar-label">Subtotal plantas</span><span class="total-bar-val" id="sub-plantas">$0</span></div>
+      </div>
+
+      <!-- EXTRAS -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div class="section-title" style="margin:0">2. Extras e insumos</div>
+          <button class="btn btn-sm" onclick="addItem('extras')">+ Ítem</button>
+        </div>
+        <div class="item-header">
+          <div class="col-label">Descripción</div>
+          <div class="col-label" style="text-align:center">Cant.</div>
+          <div class="col-label" style="text-align:right">P. unit.</div>
+          <div class="col-label" style="text-align:right">Subtotal</div>
+          <div></div>
+        </div>
+        <div id="items-extras"></div>
+        <div class="total-bar"><span class="total-bar-label">Subtotal extras</span><span class="total-bar-val" id="sub-extras">$0</span></div>
+      </div>
+
+      <!-- MANO DE OBRA -->
+      <div class="card">
+        <div class="section-title">3. Mano de obra y honorarios</div>
+        <div class="grid-2" style="margin-bottom:10px;">
+          <div class="field">
+            <label class="input-label">Jornadas</label>
+            <input type="number" id="mo-jornadas" value="1" min="0" oninput="calcTotales()">
+          </div>
+          <div class="field">
+            <label class="input-label">Costo por jornada ($)</label>
+            <input type="number" id="mo-precio" value="130000" min="0" oninput="calcTotales()">
+          </div>
+        </div>
+        <div class="field">
+          <label class="input-label">Honorarios paisajismo (%)</label>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="number" id="hono-pct" value="15" min="0" max="100" style="width:80px" oninput="calcTotales()">
+            <span style="font-size:12px; color:var(--text-soft)">% sobre (plantas + extras + m. de obra)</span>
+          </div>
+        </div>
+        <div class="total-bar"><span class="total-bar-label">Subtotal mano de obra + honorarios</span><span class="total-bar-val" id="sub-mo">$0</span></div>
+      </div>
+
+      <!-- RESUMEN FINAL -->
+      <div class="resumen-card">
+        <div class="resumen-row"><span class="resumen-label">Plantas</span><span class="resumen-val" id="r-plantas">$0</span></div>
+        <div class="resumen-row"><span class="resumen-label">Extras e insumos</span><span class="resumen-val" id="r-extras">$0</span></div>
+        <div class="resumen-row"><span class="resumen-label">Mano de obra</span><span class="resumen-val" id="r-mo">$0</span></div>
+        <div class="resumen-row"><span class="resumen-label" id="r-hono-label">Honorarios (15%)</span><span class="resumen-val" id="r-hono">$0</span></div>
+        <hr class="resumen-divider">
+        <div class="resumen-row">
+          <span style="font-size:15px; font-weight:600;">Total</span>
+          <span class="resumen-total" id="r-total">$0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:8px;">
+          <div style="font-size:12px; color:var(--text-hint);">
+            Anticipo 70%: <strong id="r-anticipo" style="color:var(--verde-dark)">$0</strong>
+          </div>
+          <div style="font-size:12px; color:var(--text-hint);">
+            TC $<input type="number" id="tc-val" value="1425" style="width:70px; display:inline; padding:2px 6px; font-size:12px;" oninput="calcTotales()">
+            &nbsp;≈ <strong id="r-usd" style="color:var(--text-soft)">USD 0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="accion-bar">
+        <button class="btn" onclick="guardarPpto()">💾 Guardar</button>
+        <button class="btn" onclick="showScreen('lista')">← Lista</button>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-lg" onclick="generarPDF()">📄 Generar PDF</button>
+        <button class="btn btn-whatsapp btn-lg" onclick="compartirWA()">📲 WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- TAB INTERNO -->
+    <div id="tab-interno" style="display:none">
+      <div class="interno-box">
+        <div class="interno-title">🔒 Solo interno — no aparece en el PDF del cliente</div>
+        <div class="section-title" style="margin-bottom:8px;">Comisiones sobre el total</div>
+        <div id="comm-rows"></div>
+        <button class="btn btn-sm" onclick="addComm()" style="margin-top:8px;">+ Agregar colaborador</button>
+        <div class="divider"></div>
+        <div class="section-title" style="margin-bottom:8px;">Costos reales por proveedor</div>
+        <div id="cost-rows"></div>
+        <button class="btn btn-sm" onclick="addCost()" style="margin-top:8px;">+ Agregar proveedor</button>
+        <div class="divider"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; color:var(--warning-text); font-weight:500;">Margen estimado</span>
+          <span style="font-size:16px; font-weight:700; color:var(--verde-dark);" id="margen-val">$0</span>
+        </div>
+        <div class="hint" style="margin-top:4px;">Total presupuesto − costos reales ingresados</div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="guardarPpto()">Guardar cambios</button>
+      </div>
+    </div>
+
+    <!-- TAB NOTAS -->
+    <div id="tab-notas" style="display:none">
+      <div class="card">
+        <div class="section-title">Textos para el PDF del cliente</div>
+        <div class="nota-section">
+          <label class="input-label">El servicio incluye</label>
+          <textarea id="nota-incluye" rows="3">Provisión de plantas, macetas, sustratos y materiales. Plantación completa.</textarea>
+        </div>
+        <div class="nota-section">
+          <label class="input-label">Forma de pago</label>
+          <textarea id="nota-pago" rows="3">Anticipo 70% para reserva de materiales y programación. Saldo 30% contra finalización. Efectivo o transferencia. No incluye IVA — se emite Factura C.</textarea>
+        </div>
+        <div class="nota-section">
+          <label class="input-label">Garantía</label>
+          <textarea id="nota-garantia" rows="2">Se garantiza correcta implantación y ejecución. No incluye reposición por falta de riego o causas externas posteriores a la entrega.</textarea>
+        </div>
+        <div class="nota-section">
+          <label class="input-label">Aclaración sobre plantas</label>
+          <textarea id="nota-plantas" rows="2">Los ejemplares descriptos fueron seleccionados según stock disponible. En caso de no contar con alguna especie, se reemplazará por un ejemplar de similar calidad.</textarea>
+        </div>
+        <div class="field">
+          <label class="input-label">Validez del presupuesto (días)</label>
+          <input type="number" id="nota-validez" value="7" style="width:80px">
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="guardarPpto()">Guardar cambios</button>
+      </div>
+    </div>
+
+    <!-- TAB INFO -->
+    <div id="tab-info" style="display:none">
+      <div class="card">
+        <div class="section-title">Datos del proyecto</div>
+        <div class="grid-2">
+          <div class="field">
+            <label class="input-label">Cliente</label>
+            <input type="text" id="edit-cliente" placeholder="Nombre del cliente">
+          </div>
+          <div class="field">
+            <label class="input-label">Proyecto / Dirección</label>
+            <input type="text" id="edit-proyecto">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label class="input-label">Tipo de trabajo</label>
+            <select id="edit-tipo">
+              <option>Llave en mano</option>
+              <option>Solo macetas y plantas</option>
+              <option>Solo diseño / dirección</option>
+              <option>Mantenimiento</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="input-label">Tel / WhatsApp cliente</label>
+            <input type="text" id="edit-tel">
+          </div>
+        </div>
+        <div class="field">
+          <label class="input-label">Estado</label>
+          <div class="status-bar" id="status-bar"></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-danger" onclick="eliminarPpto()">🗑 Eliminar presupuesto</button>
+        <button class="btn btn-primary" onclick="guardarPpto()">Guardar cambios</button>
+      </div>
+    </div>
+
+  </div><!-- end screen-ver -->
+
+</div><!-- end container -->
+
+<script>
+// ============ LOGO ============
+const LOGO_B64 = "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";
+
+document.getElementById('logo-img').src = 'data:image/png;base64,' + LOGO_B64;
+
+// ============ STATE ============
+let state = {
+  presupuestos: JSON.parse(localStorage.getItem('lyl_pptos') || '[]'),
+  currentId: null
+};
+
+function save() {
+  localStorage.setItem('lyl_pptos', JSON.stringify(state.presupuestos));
+}
+
+function getPpto(id) {
+  return state.presupuestos.find(p => p.id === id);
+}
+
+function nextNum() {
+  if (state.presupuestos.length === 0) return 1;
+  return Math.max(...state.presupuestos.map(p => p.num || 0)) + 1;
+}
+
+function fmtMoney(n) {
+  return '$' + Math.round(n || 0).toLocaleString('es-AR');
+}
+
+// ============ SCREENS ============
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (id === 'lista') renderLista();
+}
+
+function switchTab(btn, tabId) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['tab-items','tab-interno','tab-notas','tab-info'].forEach(t => {
+    const el = document.getElementById(t);
+    if (el) el.style.display = (t === tabId) ? 'block' : 'none';
+  });
+}
+
+// ============ LISTA ============
+function renderLista() {
+  const pp = state.presupuestos;
+  const m = document.getElementById('m-total');
+  const ma = document.getElementById('m-aprobados');
+  const mp = document.getElementById('m-pendientes');
+  m.textContent = pp.length;
+  const aprobados = pp.filter(p => p.estado === 'aprobado').reduce((s, p) => s + (p.total || 0), 0);
+  const enviados = pp.filter(p => p.estado === 'enviado').reduce((s, p) => s + (p.total || 0), 0);
+  ma.textContent = fmtMoney(aprobados);
+  mp.textContent = fmtMoney(enviados);
+
+  const cont = document.getElementById('lista-container');
+  if (pp.length === 0) {
+    cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🌿</div><div class="empty-state-title">Sin presupuestos todavía</div><div class="empty-state-sub">Creá tu primer presupuesto</div><button class="btn btn-primary" onclick="showScreen('nuevo')">+ Nuevo presupuesto</button></div>`;
+    return;
+  }
+  const sorted = [...pp].sort((a, b) => (b.num || 0) - (a.num || 0));
+  cont.innerHTML = sorted.map(p => `
+    <div class="ppto-item" onclick="abrirPpto(${p.id})">
+      <div class="ppto-num">${String(p.num).padStart(2,'0')}</div>
+      <div>
+        <div class="ppto-name">${p.cliente || '(Sin cliente)'}</div>
+        <div class="ppto-sub">${p.proyecto || '—'} · ${p.tipo || ''}</div>
+      </div>
+      <span class="badge badge-${p.estado || 'borrador'}">${estadoLabel(p.estado)}</span>
+      <div class="ppto-fecha">${p.fecha || '—'}</div>
+      <div class="ppto-total">${fmtMoney(p.total)}</div>
+    </div>
+  `).join('');
+}
+
+function estadoLabel(e) {
+  return {borrador:'Borrador',enviado:'Enviado',aprobado:'Aprobado',rechazado:'Rechazado'}[e||'borrador'] || 'Borrador';
+}
+
+// ============ CREAR ============
+function crearPpto() {
+  const cliente = document.getElementById('new-cliente').value.trim();
+  const proyecto = document.getElementById('new-proyecto').value.trim();
+  const tipo = document.getElementById('new-tipo').value;
+  const tel = document.getElementById('new-tel').value.trim();
+  const id = Date.now();
+  const num = nextNum();
+  const p = {
+    id, num, cliente, proyecto, tipo, tel,
+    estado: 'borrador',
+    fecha: new Date().toLocaleDateString('es-AR', {day:'2-digit',month:'short',year:'numeric'}),
+    plantas: [], extras: [],
+    mo_jornadas: 1, mo_precio: 130000, hono_pct: 15,
+    comisiones: [], costos: [],
+    nota_incluye: 'Provisión de plantas, macetas, sustratos y materiales. Plantación completa.',
+    nota_pago: 'Anticipo 70% para reserva de materiales y programación. Saldo 30% contra finalización. Efectivo o transferencia. No incluye IVA — se emite Factura C.',
+    nota_garantia: 'Se garantiza correcta implantación y ejecución. No incluye reposición por falta de riego o causas externas posteriores a la entrega.',
+    nota_plantas: 'Los ejemplares descriptos fueron seleccionados según stock disponible. En caso de no contar con alguna especie, se reemplazará por un ejemplar de similar calidad.',
+    nota_validez: 7,
+    tc: 1425,
+    total: 0
+  };
+  state.presupuestos.push(p);
+  state.currentId = id;
+  save();
+  document.getElementById('new-cliente').value = '';
+  document.getElementById('new-proyecto').value = '';
+  document.getElementById('new-tel').value = '';
+  abrirPpto(id);
+}
+
+// ============ ABRIR ============
+function abrirPpto(id) {
+  state.currentId = id;
+  const p = getPpto(id);
+  if (!p) return;
+  document.getElementById('ver-title').textContent = `Ppto. #${String(p.num).padStart(2,'0')} — ${p.cliente || 'Sin cliente'}`;
+  document.getElementById('ver-badge').innerHTML = `<span class="badge badge-${p.estado || 'borrador'}">${estadoLabel(p.estado)}</span>`;
+
+  // items
+  renderItems('plantas', p.plantas);
+  renderItems('extras', p.extras);
+
+  // mo
+  document.getElementById('mo-jornadas').value = p.mo_jornadas || 1;
+  document.getElementById('mo-precio').value = p.mo_precio || 130000;
+  document.getElementById('hono-pct').value = p.hono_pct || 15;
+  document.getElementById('tc-val').value = p.tc || 1425;
+
+  // notas
+  document.getElementById('nota-incluye').value = p.nota_incluye || '';
+  document.getElementById('nota-pago').value = p.nota_pago || '';
+  document.getElementById('nota-garantia').value = p.nota_garantia || '';
+  document.getElementById('nota-plantas').value = p.nota_plantas || '';
+  document.getElementById('nota-validez').value = p.nota_validez || 7;
+
+  // info
+  document.getElementById('edit-cliente').value = p.cliente || '';
+  document.getElementById('edit-proyecto').value = p.proyecto || '';
+  document.getElementById('edit-tipo').value = p.tipo || 'Llave en mano';
+  document.getElementById('edit-tel').value = p.tel || '';
+  renderStatusBar(p.estado);
+
+  // interno
+  renderComisiones(p.comisiones || []);
+  renderCostos(p.costos || []);
+
+  calcTotales();
+
+  // reset tabs
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('.tab').classList.add('active');
+  ['tab-items','tab-interno','tab-notas','tab-info'].forEach((t,i) => {
+    document.getElementById(t).style.display = i === 0 ? 'block' : 'none';
+  });
+
+  showScreen('ver');
+}
+
+// ============ ITEMS ============
+function renderItems(cat, items) {
+  const cont = document.getElementById('items-' + cat);
+  if (!items || items.length === 0) {
+    cont.innerHTML = `<div style="padding:10px 0; color:var(--text-hint); font-size:13px;">Sin ítems. Usá "+ Ítem" para agregar.</div>`;
+    return;
+  }
+  cont.innerHTML = items.map((item, i) => `
+    <div class="item-row">
+      <input type="text" value="${escHtml(item.desc || '')}" oninput="updateItem('${cat}',${i},'desc',this.value)" style="font-size:13px;" placeholder="Descripción">
+      <input type="number" value="${item.cant || 1}" min="0" step="0.5" oninput="updateItem('${cat}',${i},'cant',parseFloat(this.value)||0)" style="text-align:center;">
+      <input type="number" value="${item.precio || 0}" min="0" oninput="updateItem('${cat}',${i},'precio',parseFloat(this.value)||0)" style="text-align:right;" placeholder="0">
+      <div class="item-total">${fmtMoney((item.cant||1)*(item.precio||0))}</div>
+      <button class="item-del" onclick="removeItem('${cat}',${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function addItem(cat) {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  p[cat].push({ desc: '', cant: 1, precio: 0 });
+  save();
+  renderItems(cat, p[cat]);
+  calcTotales();
+}
+
+function removeItem(cat, idx) {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  p[cat].splice(idx, 1);
+  save();
+  renderItems(cat, p[cat]);
+  calcTotales();
+}
+
+function updateItem(cat, idx, field, val) {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  p[cat][idx][field] = val;
+  save();
+  const row = document.getElementById('items-' + cat).children[idx];
+  if (row) {
+    const tot = row.querySelector('.item-total');
+    if (tot) tot.textContent = fmtMoney((p[cat][idx].cant||1)*(p[cat][idx].precio||0));
+  }
+  calcTotales();
+}
+
+// ============ CALCULAR ============
+function calcTotales() {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+
+  const subPlantas = (p.plantas||[]).reduce((s,i) => s + (i.cant||1)*(i.precio||0), 0);
+  const subExtras = (p.extras||[]).reduce((s,i) => s + (i.cant||1)*(i.precio||0), 0);
+  const jornadas = parseFloat(document.getElementById('mo-jornadas')?.value) || p.mo_jornadas || 1;
+  const preciomo = parseFloat(document.getElementById('mo-precio')?.value) || p.mo_precio || 130000;
+  const honoPct = parseFloat(document.getElementById('hono-pct')?.value) || p.hono_pct || 15;
+  const tc = parseFloat(document.getElementById('tc-val')?.value) || p.tc || 1425;
+
+  const subMO = jornadas * preciomo;
+  const subHono = (subPlantas + subExtras + subMO) * honoPct / 100;
+  const total = subPlantas + subExtras + subMO + subHono;
+
+  setText('sub-plantas', fmtMoney(subPlantas));
+  setText('sub-extras', fmtMoney(subExtras));
+  setText('sub-mo', fmtMoney(subMO + subHono));
+  setText('r-plantas', fmtMoney(subPlantas));
+  setText('r-extras', fmtMoney(subExtras));
+  setText('r-mo', fmtMoney(subMO));
+  setText('r-hono-label', `Honorarios (${honoPct}%)`);
+  setText('r-hono', fmtMoney(subHono));
+  setText('r-total', fmtMoney(total));
+  setText('r-anticipo', fmtMoney(total * 0.7));
+  setText('r-usd', 'USD ' + Math.round(total / tc).toLocaleString('es-AR'));
+
+  // margen interno
+  const totalCostos = (p.costos||[]).reduce((s,c) => s + (parseFloat(c.valor)||0), 0);
+  setText('margen-val', fmtMoney(total - totalCostos));
+
+  p.total = total;
+  save();
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// ============ STATUS ============
+function renderStatusBar(current) {
+  const estados = ['borrador','enviado','aprobado','rechazado'];
+  const bar = document.getElementById('status-bar');
+  bar.innerHTML = estados.map(e => `
+    <button class="status-btn ${current===e?'active-'+e:''}" onclick="setEstado('${e}',this)">${estadoLabel(e)}</button>
+  `).join('');
+}
+
+function setEstado(e, btn) {
+  document.querySelectorAll('.status-btn').forEach(b => b.className = 'status-btn');
+  btn.classList.add('active-' + e);
+  const p = getPpto(state.currentId);
+  if (p) {
+    p.estado = e;
+    save();
+    document.getElementById('ver-badge').innerHTML = `<span class="badge badge-${e}">${estadoLabel(e)}</span>`;
+  }
+}
+
+// ============ COMISIONES ============
+function renderComisiones(comisiones) {
+  const p = getPpto(state.currentId);
+  const total = p ? p.total || 0 : 0;
+  document.getElementById('comm-rows').innerHTML = (comisiones || []).map((c, i) => `
+    <div class="comm-row">
+      <input type="text" value="${escHtml(c.nombre||'')}" oninput="updateComm(${i},'nombre',this.value)" placeholder="Nombre" style="font-size:13px;">
+      <div class="comm-input-wrap">
+        <input type="number" value="${c.pct||0}" min="0" max="100" oninput="updateComm(${i},'pct',parseFloat(this.value)||0)">
+        <span class="comm-pct">%</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+        <span class="comm-val">${fmtMoney(total * (c.pct||0) / 100)}</span>
+        <button class="item-del" onclick="removeComm(${i})">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addComm() {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  if (!p.comisiones) p.comisiones = [];
+  p.comisiones.push({ nombre: '', pct: 10 });
+  save();
+  renderComisiones(p.comisiones);
+}
+
+function removeComm(i) {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  p.comisiones.splice(i, 1);
+  save();
+  renderComisiones(p.comisiones);
+}
+
+function updateComm(i, field, val) {
+  const p = getPpto(state.currentId);
+  if (!p || !p.comisiones[i]) return;
+  p.comisiones[i][field] = val;
+  save();
+  renderComisiones(p.comisiones);
+  setText('margen-val', fmtMoney((p.total||0) - (p.costos||[]).reduce((s,c) => s + (parseFloat(c.valor)||0), 0)));
+}
+
+// ============ COSTOS ============
+function renderCostos(costos) {
+  document.getElementById('cost-rows').innerHTML = (costos || []).map((c, i) => `
+    <div class="comm-row">
+      <input type="text" value="${escHtml(c.nombre||'')}" oninput="updateCost(${i},'nombre',this.value)" placeholder="Proveedor" style="font-size:13px;">
+      <div></div>
+      <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+        <input type="number" value="${c.valor||0}" oninput="updateCost(${i},'valor',parseFloat(this.value)||0)" style="width:110px; text-align:right;" placeholder="$0">
+        <button class="item-del" onclick="removeCost(${i})">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addCost() {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  if (!p.costos) p.costos = [];
+  p.costos.push({ nombre: '', valor: 0 });
+  save();
+  renderCostos(p.costos);
+}
+
+function removeCost(i) {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  p.costos.splice(i, 1);
+  save();
+  renderCostos(p.costos);
+  calcTotales();
+}
+
+function updateCost(i, field, val) {
+  const p = getPpto(state.currentId);
+  if (!p || !p.costos[i]) return;
+  p.costos[i][field] = val;
+  save();
+  calcTotales();
+}
+
+// ============ GUARDAR ============
+function guardarPpto() {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  p.cliente = document.getElementById('edit-cliente').value.trim() || p.cliente;
+  p.proyecto = document.getElementById('edit-proyecto').value.trim() || p.proyecto;
+  p.tipo = document.getElementById('edit-tipo').value || p.tipo;
+  p.tel = document.getElementById('edit-tel').value.trim() || p.tel;
+  p.mo_jornadas = parseFloat(document.getElementById('mo-jornadas').value) || 1;
+  p.mo_precio = parseFloat(document.getElementById('mo-precio').value) || 130000;
+  p.hono_pct = parseFloat(document.getElementById('hono-pct').value) || 15;
+  p.tc = parseFloat(document.getElementById('tc-val').value) || 1425;
+  p.nota_incluye = document.getElementById('nota-incluye').value;
+  p.nota_pago = document.getElementById('nota-pago').value;
+  p.nota_garantia = document.getElementById('nota-garantia').value;
+  p.nota_plantas = document.getElementById('nota-plantas').value;
+  p.nota_validez = parseInt(document.getElementById('nota-validez').value) || 7;
+  save();
+  calcTotales();
+  document.getElementById('ver-title').textContent = `Ppto. #${String(p.num).padStart(2,'0')} — ${p.cliente || 'Sin cliente'}`;
+  alert('✅ Presupuesto guardado');
+}
+
+// ============ ELIMINAR ============
+function eliminarPpto() {
+  if (!confirm('¿Eliminar este presupuesto? Esta acción no se puede deshacer.')) return;
+  state.presupuestos = state.presupuestos.filter(p => p.id !== state.currentId);
+  state.currentId = null;
+  save();
+  showScreen('lista');
+}
+
+// ============ PDF ============
+function generarPDF() {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210;
+  const verde = [122, 144, 85];
+  const verdeD = [90, 110, 58];
+  const blanco = [255, 255, 255];
+  const grisC = [245, 247, 240];
+  const grisT = [100, 110, 80];
+  const negro = [30, 32, 24];
+
+  // HEADER
+  doc.setFillColor(...verde);
+  doc.rect(0, 0, W, 42, 'F');
+
+  // Logo (circle bg)
+  doc.setFillColor(255,255,255,0.2);
+
+  // Title
+  doc.setTextColor(...blanco);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.text('LyL Macetas', 20, 18);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text('Paisajismo · Llave en mano', 20, 25);
+
+  // Numero ppto
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text(`Presupuesto N° ${String(p.num).padStart(3,'0')}`, W - 20, 15, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(p.fecha || '', W - 20, 22, { align: 'right' });
+  const vencimiento = `Válido por ${p.nota_validez || 7} días`;
+  doc.text(vencimiento, W - 20, 29, { align: 'right' });
+
+  let y = 52;
+
+  // Cliente + proyecto
+  doc.setFillColor(...grisC);
+  doc.rect(14, y - 5, W - 28, 20, 'F');
+  doc.setTextColor(...negro);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Cliente:', 18, y + 2);
+  doc.setFont('helvetica', 'normal');
+  doc.text(p.cliente || '—', 42, y + 2);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Proyecto:', 18, y + 9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(p.proyecto || '—', 46, y + 9);
+
+  y += 26;
+
+  // Función para sección de items
+  function renderSeccion(titulo, items, numSec) {
+    if (!items || items.length === 0) return;
+    // Sección header
+    doc.setFillColor(...verde);
+    doc.rect(14, y - 4, W - 28, 8, 'F');
+    doc.setTextColor(...blanco);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`${numSec}. ${titulo}`, 17, y + 1);
+    y += 9;
+
+    // Column headers
+    doc.setFillColor(220, 230, 205);
+    doc.rect(14, y - 3, W - 28, 6, 'F');
+    doc.setTextColor(...grisT);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Descripción', 17, y + 1);
+    doc.text('Cant.', 120, y + 1, { align: 'right' });
+    doc.text('P. Unit.', 150, y + 1, { align: 'right' });
+    doc.text('Subtotal', W - 16, y + 1, { align: 'right' });
+    y += 7;
+
+    let subtotal = 0;
+    items.forEach((item, i) => {
+      if (!item.desc) return;
+      if (i % 2 === 0) {
+        doc.setFillColor(250, 252, 246);
+        doc.rect(14, y - 3, W - 28, 6, 'F');
+      }
+      doc.setTextColor(...negro);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const tot = (item.cant || 1) * (item.precio || 0);
+      subtotal += tot;
+      doc.text(item.desc || '', 17, y + 1);
+      doc.text(String(item.cant || 1), 120, y + 1, { align: 'right' });
+      doc.text('$' + Math.round(item.precio || 0).toLocaleString('es-AR'), 150, y + 1, { align: 'right' });
+      doc.text('$' + Math.round(tot).toLocaleString('es-AR'), W - 16, y + 1, { align: 'right' });
+      y += 6;
+      if (y > 250) { doc.addPage(); y = 20; }
+    });
+
+    // Subtotal row
+    doc.setFillColor(...grisC);
+    doc.rect(120, y - 2, W - 134, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...verdeD);
+    doc.text('Subtotal', 150, y + 3, { align: 'right' });
+    doc.text('$' + Math.round(subtotal).toLocaleString('es-AR'), W - 16, y + 3, { align: 'right' });
+    y += 11;
+  }
+
+  renderSeccion('Plantas', p.plantas, 1);
+  renderSeccion('Extras e insumos', p.extras, 2);
+
+  // MANO DE OBRA
+  const jornadas = p.mo_jornadas || 1;
+  const preciomo = p.mo_precio || 130000;
+  const honoPct = p.hono_pct || 15;
+  const subPlantas = (p.plantas||[]).reduce((s,i) => s + (i.cant||1)*(i.precio||0), 0);
+  const subExtras = (p.extras||[]).reduce((s,i) => s + (i.cant||1)*(i.precio||0), 0);
+  const subMO = jornadas * preciomo;
+  const subHono = (subPlantas + subExtras + subMO) * honoPct / 100;
+  const total = subPlantas + subExtras + subMO + subHono;
+
+  doc.setFillColor(...verde);
+  doc.rect(14, y - 4, W - 28, 8, 'F');
+  doc.setTextColor(...blanco);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('3. Mano de obra y honorarios', 17, y + 1);
+  y += 9;
+
+  doc.setTextColor(...negro);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setFillColor(250, 252, 246);
+  doc.rect(14, y - 3, W - 28, 6, 'F');
+  doc.text(`Mano de obra (${jornadas} jornada${jornadas>1?'s':''})`, 17, y + 1);
+  doc.text('$' + Math.round(subMO).toLocaleString('es-AR'), W - 16, y + 1, { align: 'right' });
+  y += 6;
+  doc.text(`Honorarios paisajismo (${honoPct}%)`, 17, y + 1);
+  doc.text('$' + Math.round(subHono).toLocaleString('es-AR'), W - 16, y + 1, { align: 'right' });
+  y += 9;
+
+  // TOTAL
+  if (y > 230) { doc.addPage(); y = 20; }
+  doc.setFillColor(...verdeD);
+  doc.rect(14, y - 3, W - 28, 14, 'F');
+  doc.setTextColor(...blanco);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('TOTAL', 18, y + 6);
+  doc.setFontSize(16);
+  doc.text('$' + Math.round(total).toLocaleString('es-AR'), W - 16, y + 6, { align: 'right' });
+  y += 18;
+
+  // Anticipo / saldo
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...grisT);
+  doc.text(`Anticipo 70%: $${Math.round(total*0.7).toLocaleString('es-AR')}`, 18, y);
+  doc.text(`Saldo 30%: $${Math.round(total*0.3).toLocaleString('es-AR')}`, 80, y);
+  doc.text(`TC $${(p.tc||1425).toLocaleString('es-AR')} · USD ${Math.round(total/(p.tc||1425)).toLocaleString('es-AR')}`, W - 16, y, { align: 'right' });
+  y += 12;
+
+  // NOTAS
+  if (y > 230) { doc.addPage(); y = 20; }
+  const notas = [
+    { label: 'El servicio incluye:', val: p.nota_incluye },
+    { label: 'Forma de pago:', val: p.nota_pago },
+    { label: 'Garantía:', val: p.nota_garantia },
+    { label: 'Aclaración sobre plantas:', val: p.nota_plantas },
+  ].filter(n => n.val);
+
+  doc.setFillColor(...grisC);
+  doc.rect(14, y - 3, W - 28, 6, 'F');
+  doc.setTextColor(...verde);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Condiciones y notas', 17, y + 1);
+  y += 9;
+
+  notas.forEach(nota => {
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...verdeD);
+    doc.text(nota.label, 17, y);
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...negro);
+    const lines = doc.splitTextToSize(nota.val, W - 34);
+    lines.forEach(line => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.text(line, 17, y);
+      y += 4;
+    });
+    y += 3;
+  });
+
+  // FOOTER
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFillColor(...verde);
+    doc.rect(0, 287, W, 10, 'F');
+    doc.setTextColor(...blanco);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('LyL Macetas · Nuñez, Buenos Aires · lylmacetas.com.ar', 14, 293);
+    doc.text(`Página ${i} de ${totalPages}`, W - 14, 293, { align: 'right' });
+  }
+
+  const filename = `LyL_Presupuesto_${String(p.num).padStart(3,'0')}_${(p.cliente||'cliente').replace(/\s+/g,'-')}.pdf`;
+  doc.save(filename);
+}
+
+// ============ WHATSAPP ============
+function compartirWA() {
+  const p = getPpto(state.currentId);
+  if (!p) return;
+  const msg = encodeURIComponent(
+    `Hola${p.cliente ? ' ' + p.cliente : ''}! 🌿 Te envío el presupuesto N° ${String(p.num).padStart(3,'0')} de *LyL Macetas* por el proyecto *${p.proyecto || 'tu proyecto'}*.\n\n*Total: ${fmtMoney(p.total||0)}*\n\nPrimero generá el PDF y luego adjuntalo en WhatsApp.`
+  );
+  const tel = (p.tel || '').replace(/\D/g,'');
+  const url = tel
+    ? `https://wa.me/${tel}?text=${msg}`
+    : `https://wa.me/?text=${msg}`;
+  window.open(url, '_blank');
+}
+
+// ============ INIT ============
+renderLista();
+</script>
+</body>
+</html>
