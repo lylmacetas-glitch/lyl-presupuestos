@@ -286,7 +286,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <!-- toggle precios en PDF -->
     <div class="card" style="padding:.75rem 1.25rem;margin-bottom:.75rem">
       <div class="toggle-row">
-        <label class="toggle"><input type="checkbox" id="toggle-precios" checked onchange="guardarToggle()"><span class="toggle-slider"></span></label>
+        <label class="toggle"><input type="checkbox" id="toggle-precios" checked onchange="onTogglePrecios()"><span class="toggle-slider"></span></label>
         <span class="toggle-label">Mostrar precios unitarios en el PDF del cliente</span>
       </div>
     </div>
@@ -311,7 +311,24 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <!-- EXTRAS -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="section-title" style="margin:0">2. Extras e insumos</div>
+        <div class="section-title" style="margin:0">2. Macetas</div>
+        <button class="btn btn-sm" onclick="addItem('macetas')">+ Ítem</button>
+      </div>
+      <div class="item-header-row">
+        <div class="col-label">Descripción</div>
+        <div class="col-label" style="text-align:center">Cant.</div>
+        <div class="col-label" style="text-align:right">P. unit.</div>
+        <div class="col-label" style="text-align:right">Subtotal</div>
+        <div></div>
+      </div>
+      <div id="items-macetas"></div>
+      <div class="total-bar"><span class="total-bar-label">Subtotal macetas</span><span class="total-bar-val" id="sub-macetas">$0</span></div>
+    </div>
+
+    <!-- SUSTRATOS -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="section-title" style="margin:0">3. Sustratos e insumos</div>
         <button class="btn btn-sm" onclick="addItem('extras')">+ Ítem</button>
       </div>
       <div class="item-header-row">
@@ -322,13 +339,13 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
         <div></div>
       </div>
       <div id="items-extras"></div>
-      <div class="total-bar"><span class="total-bar-label">Subtotal extras</span><span class="total-bar-val" id="sub-extras">$0</span></div>
+      <div class="total-bar"><span class="total-bar-label">Subtotal sustratos e insumos</span><span class="total-bar-val" id="sub-extras">$0</span></div>
     </div>
 
     <!-- LOGÍSTICA -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="section-title" style="margin:0">3. Logística y envío</div>
+        <div class="section-title" style="margin:0">4. Logística y envío</div>
         <button class="btn btn-sm" onclick="addItem('logistica')">+ Ítem</button>
       </div>
       <div class="item-header-row">
@@ -344,7 +361,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 
     <!-- MANO DE OBRA -->
     <div class="card">
-      <div class="section-title">4. Mano de obra y honorarios</div>
+      <div class="section-title">5. Mano de obra y honorarios</div>
       <div class="grid-2" style="margin-bottom:10px">
         <div class="field"><label class="input-label">Jornadas</label><input type="number" id="mo-jornadas" value="1" min="0" oninput="calcTotales()"></div>
         <div class="field"><label class="input-label">Costo por jornada ($)</label><input type="number" id="mo-precio" value="130000" min="0" oninput="calcTotales()"></div>
@@ -353,7 +370,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
         <label class="input-label">Honorarios paisajismo (%)</label>
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" id="hono-pct" value="15" min="0" max="100" style="width:80px" oninput="calcTotales()">
-          <span style="font-size:12px;color:var(--text-soft)">% sobre (plantas + extras + logística + m. de obra)</span>
+          <span style="font-size:12px;color:var(--text-soft)">% sobre (plantas + macetas + sustratos + logística + m. de obra)</span>
         </div>
       </div>
       <div class="total-bar"><span class="total-bar-label">Subtotal mano de obra + honorarios</span><span class="total-bar-val" id="sub-mo">$0</span></div>
@@ -362,7 +379,8 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <!-- RESUMEN -->
     <div class="resumen-card">
       <div class="resumen-row"><span class="resumen-label">Plantas</span><span class="resumen-val" id="r-plantas">$0</span></div>
-      <div class="resumen-row"><span class="resumen-label">Extras e insumos</span><span class="resumen-val" id="r-extras">$0</span></div>
+      <div class="resumen-row"><span class="resumen-label">Macetas</span><span class="resumen-val" id="r-macetas">$0</span></div>
+      <div class="resumen-row"><span class="resumen-label">Sustratos e insumos</span><span class="resumen-val" id="r-extras">$0</span></div>
       <div class="resumen-row"><span class="resumen-label">Logística y envío</span><span class="resumen-val" id="r-logistica">$0</span></div>
       <div class="resumen-row"><span class="resumen-label">Mano de obra</span><span class="resumen-val" id="r-mo">$0</span></div>
       <div class="resumen-row"><span class="resumen-label" id="r-hono-label">Honorarios (15%)</span><span class="resumen-val" id="r-hono">$0</span></div>
@@ -631,9 +649,9 @@ function crearPpto(){
     tel:document.getElementById('new-tel').value.trim(),
     estado:'borrador',
     fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}),
-    plantas:[], extras:[], logistica:[],
+    plantas:[], macetas:[], extras:[], logistica:[],
     mo_jornadas:1, mo_precio:130000, hono_pct:15,
-    comisiones:[], costos_seccion:{plantas:0,extras:0,logistica:0,mo:0},
+    comisiones:[], costos_seccion:{plantas:0,macetas:0,extras:0,logistica:0,mo:0},
     mostrar_precios:true,
     nota_incluye:'Provisión de plantas, macetas, sustratos y materiales. Plantación completa.',
     nota_pago:'Anticipo 70% para reserva de materiales y programación. Saldo 30% contra finalización. Efectivo o transferencia. No incluye IVA — se emite Factura C.',
@@ -658,6 +676,7 @@ function abrirPpto(id){
   document.getElementById('ver-badge').innerHTML=`<span class="badge badge-${p.estado||'borrador'}">${estadoLabel(p.estado)}</span>`;
 
   renderItems('plantas',p.plantas);
+  renderItems('macetas',p.macetas||[]);
   renderItems('extras',p.extras);
   renderItems('logistica',p.logistica);
 
@@ -739,6 +758,7 @@ function updateItem(cat,idx,field,val){
 function calcTotales(){
   const p=getPpto(state.currentId); if(!p) return;
   const subPlantas=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
+  const subMacetas=(p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subExtras=(p.extras||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subLogistica=(p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const jornadas=parseFloat(document.getElementById('mo-jornadas')?.value)||1;
@@ -746,16 +766,18 @@ function calcTotales(){
   const honoPct=parseFloat(document.getElementById('hono-pct')?.value)||15;
   const tc=parseFloat(document.getElementById('tc-val')?.value)||1425;
   const subMO=jornadas*preciomo;
-  const base=subPlantas+subExtras+subLogistica+subMO;
+  const base=subPlantas+subMacetas+subExtras+subLogistica+subMO;
   const subHono=base*honoPct/100;
   const total=base+subHono;
 
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   set('sub-plantas',fmtMoney(subPlantas));
+  set('sub-macetas',fmtMoney(subMacetas));
   set('sub-extras',fmtMoney(subExtras));
   set('sub-logistica',fmtMoney(subLogistica));
   set('sub-mo',fmtMoney(subMO+subHono));
   set('r-plantas',fmtMoney(subPlantas));
+  set('r-macetas',fmtMoney(subMacetas));
   set('r-extras',fmtMoney(subExtras));
   set('r-logistica',fmtMoney(subLogistica));
   set('r-mo',fmtMoney(subMO));
@@ -774,20 +796,22 @@ function calcTotales(){
 // ===== GANANCIA =====
 function renderGanancia(){
   const p=getPpto(state.currentId); if(!p) return;
-  const cs=p.costos_seccion||{plantas:0,extras:0,logistica:0,mo:0};
+  const cs=p.costos_seccion||{plantas:0,macetas:0,extras:0,logistica:0,mo:0};
   const subPlantas=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
+  const subMacetas=(p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subExtras=(p.extras||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subLogistica=(p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const jornadas=p.mo_jornadas||1; const preciomo=p.mo_precio||130000;
   const subMO=jornadas*preciomo;
   const honoPct=p.hono_pct||15;
-  const base=subPlantas+subExtras+subLogistica+subMO;
+  const base=subPlantas+subMacetas+subExtras+subLogistica+subMO;
   const subHono=base*honoPct/100;
   const total=base+subHono;
 
   const secciones=[
     {key:'plantas',label:'Plantas',cobrado:subPlantas},
-    {key:'extras',label:'Extras e insumos',cobrado:subExtras},
+    {key:'macetas',label:'Macetas',cobrado:subMacetas},
+    {key:'extras',label:'Sustratos e insumos',cobrado:subExtras},
     {key:'logistica',label:'Logística y envío',cobrado:subLogistica},
     {key:'mo',label:'Mano de obra + honorarios',cobrado:subMO+subHono},
   ];
@@ -827,17 +851,18 @@ function renderGanancia(){
 
 function updateCosto(key,val){
   const p=getPpto(state.currentId); if(!p) return;
-  if(!p.costos_seccion) p.costos_seccion={plantas:0,extras:0,logistica:0,mo:0};
+  if(!p.costos_seccion) p.costos_seccion={plantas:0,macetas:0,extras:0,logistica:0,mo:0};
   p.costos_seccion[key]=val;
   save(); renderGanancia();
 }
 
 // ===== TOGGLE PRECIOS =====
-function guardarToggle(){
+function onTogglePrecios(){
   const p=getPpto(state.currentId); if(!p) return;
   p.mostrar_precios=document.getElementById('toggle-precios').checked;
   save();
 }
+function guardarToggle(){ onTogglePrecios(); }
 
 // ===== STATUS =====
 function renderStatusBar(current){
@@ -967,21 +992,23 @@ function generarPDF(){
   }
 
   seccion('Plantas',p.plantas,1);
-  seccion('Extras e insumos',p.extras,2);
-  seccion('Logística y envío',p.logistica,3);
+  seccion('Macetas',p.macetas||[],2);
+  seccion('Sustratos e insumos',p.extras,3);
+  seccion('Logística y envío',p.logistica,4);
 
   const subPlantas=(p.plantas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
+  const subMacetas=(p.macetas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subExtras=(p.extras||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subLog=(p.logistica||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subMO=(p.mo_jornadas||1)*(p.mo_precio||130000);
-  const base=subPlantas+subExtras+subLog+subMO;
+  const base=subPlantas+subMacetas+subExtras+subLog+subMO;
   const subHono=base*(p.hono_pct||15)/100;
   const total=base+subHono;
 
   if(y>230){doc.addPage();y=20;}
   doc.setFillColor(...verde); doc.rect(14,y-4,W-28,8,'F');
   doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text('4. Mano de obra y honorarios',17,y+1); y+=9;
+  doc.text('5. Mano de obra y honorarios',17,y+1); y+=9;
   doc.setTextColor(...negro); doc.setFont('helvetica','normal'); doc.setFontSize(9);
   doc.setFillColor(250,252,246); doc.rect(14,y-3,W-28,6,'F');
   doc.text(`Mano de obra (${p.mo_jornadas||1} jornada${(p.mo_jornadas||1)>1?'s':''})`,17,y+1);
