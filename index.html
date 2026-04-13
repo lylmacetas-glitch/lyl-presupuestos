@@ -283,11 +283,15 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       </div>
     </div>
 
-    <!-- toggle precios en PDF -->
+    <!-- toggles PDF -->
     <div class="card" style="padding:.75rem 1.25rem;margin-bottom:.75rem">
       <div class="toggle-row">
         <label class="toggle"><input type="checkbox" id="toggle-precios" checked onchange="onTogglePrecios()"><span class="toggle-slider"></span></label>
-        <span class="toggle-label">Mostrar precios unitarios en el PDF del cliente</span>
+        <span class="toggle-label">Mostrar precios y totales en el PDF del cliente</span>
+      </div>
+      <div class="toggle-row" style="margin-top:6px">
+        <label class="toggle"><input type="checkbox" id="toggle-usd" checked onchange="onToggleUsd()"><span class="toggle-slider"></span></label>
+        <span class="toggle-label">Mostrar equivalente en dólares en el PDF</span>
       </div>
     </div>
 
@@ -364,7 +368,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       <div class="section-title">5. Mano de obra y honorarios</div>
       <div class="grid-2" style="margin-bottom:10px">
         <div class="field"><label class="input-label">Jornadas</label><input type="number" id="mo-jornadas" value="1" min="0" oninput="calcTotales()"></div>
-        <div class="field"><label class="input-label">Costo por jornada ($)</label><input type="number" id="mo-precio" value="130000" min="0" oninput="calcTotales()"></div>
+        <div class="field"><label class="input-label">Costo por jornada ($)</label><input type="number" id="mo-precio" value="" min="0" placeholder="Ingresá el monto" oninput="calcTotales()"></div>
       </div>
       <div class="field">
         <label class="input-label">Honorarios paisajismo (%)</label>
@@ -391,7 +395,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:8px">
         <div style="font-size:12px;color:var(--text-hint)">Anticipo 70%: <strong id="r-anticipo" style="color:var(--verde-dark)">$0</strong></div>
-        <div style="font-size:12px;color:var(--text-hint)">≈ <strong id="r-usd" style="color:var(--text-soft)">USD 0</strong></div>
+        <div id="usd-row" style="font-size:12px;color:var(--text-hint)">≈ <strong id="r-usd" style="color:var(--text-soft)">USD 0</strong></div>
       </div>
     </div>
 
@@ -650,9 +654,9 @@ function crearPpto(){
     estado:'borrador',
     fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}),
     plantas:[], macetas:[], extras:[], logistica:[],
-    mo_jornadas:1, mo_precio:130000, hono_pct:15,
+    mo_jornadas:1, mo_precio:0, hono_pct:15,
     comisiones:[], costos_seccion:{plantas:0,macetas:0,extras:0,logistica:0,mo:0},
-    mostrar_precios:true,
+    mostrar_precios:true, mostrar_usd:true,
     nota_incluye:'Provisión de plantas, macetas, sustratos y materiales. Plantación completa.',
     nota_pago:'Anticipo 70% para reserva de materiales y programación. Saldo 30% contra finalización. Efectivo o transferencia. No incluye IVA — se emite Factura C.',
     nota_garantia:'Se garantiza correcta implantación y ejecución. No incluye reposición por falta de riego o causas externas posteriores a la entrega.',
@@ -681,10 +685,11 @@ function abrirPpto(id){
   renderItems('logistica',p.logistica);
 
   document.getElementById('mo-jornadas').value=p.mo_jornadas||1;
-  document.getElementById('mo-precio').value=p.mo_precio||130000;
+  document.getElementById('mo-precio').value=p.mo_precio||'';
   document.getElementById('hono-pct').value=p.hono_pct||15;
   document.getElementById('tc-val').value=p.tc||1425;
   document.getElementById('toggle-precios').checked=p.mostrar_precios!==false;
+  document.getElementById('toggle-usd').checked=p.mostrar_usd!==false;
 
   document.getElementById('nota-incluye').value=p.nota_incluye||'';
   document.getElementById('nota-pago').value=p.nota_pago||'';
@@ -762,7 +767,7 @@ function calcTotales(){
   const subExtras=(p.extras||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subLogistica=(p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const jornadas=parseFloat(document.getElementById('mo-jornadas')?.value)||1;
-  const preciomo=parseFloat(document.getElementById('mo-precio')?.value)||130000;
+  const preciomo=parseFloat(document.getElementById('mo-precio')?.value)||0;
   const honoPct=parseFloat(document.getElementById('hono-pct')?.value)||15;
   const tc=parseFloat(document.getElementById('tc-val')?.value)||1425;
   const subMO=jornadas*preciomo;
@@ -786,6 +791,9 @@ function calcTotales(){
   set('r-total',fmtMoney(total));
   set('r-anticipo',fmtMoney(total*0.7));
   set('r-usd','USD '+Math.round(total/tc).toLocaleString('es-AR'));
+  // sync USD row visibility
+  const usdRow=document.getElementById('usd-row');
+  if(usdRow) usdRow.style.display=(p.mostrar_usd!==false)?'':'none';
 
   p.total=total; p.tc=tc;
   p.mo_jornadas=jornadas; p.mo_precio=preciomo; p.hono_pct=honoPct;
@@ -801,7 +809,7 @@ function renderGanancia(){
   const subMacetas=(p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subExtras=(p.extras||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subLogistica=(p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
-  const jornadas=p.mo_jornadas||1; const preciomo=p.mo_precio||130000;
+  const jornadas=p.mo_jornadas||1; const preciomo=p.mo_precio||0;
   const subMO=jornadas*preciomo;
   const honoPct=p.hono_pct||15;
   const base=subPlantas+subMacetas+subExtras+subLogistica+subMO;
@@ -856,10 +864,18 @@ function updateCosto(key,val){
   save(); renderGanancia();
 }
 
-// ===== TOGGLE PRECIOS =====
+// ===== TOGGLES PDF =====
 function onTogglePrecios(){
   const p=getPpto(state.currentId); if(!p) return;
   p.mostrar_precios=document.getElementById('toggle-precios').checked;
+  save();
+}
+function onToggleUsd(){
+  const p=getPpto(state.currentId); if(!p) return;
+  p.mostrar_usd=document.getElementById('toggle-usd').checked;
+  // mostrar/ocultar fila USD en el resumen live
+  const row=document.getElementById('usd-row');
+  if(row) row.style.display=p.mostrar_usd?'':'none';
   save();
 }
 function guardarToggle(){ onTogglePrecios(); }
@@ -913,7 +929,7 @@ function guardarPpto(){
   p.nota_garantia=document.getElementById('nota-garantia').value;
   p.nota_plantas=document.getElementById('nota-plantas').value;
   p.nota_validez=parseInt(document.getElementById('nota-validez').value)||7;
-  p.mostrar_precios=document.getElementById('toggle-precios').checked;
+  // mostrar_precios se guarda en tiempo real desde onTogglePrecios
   save(); calcTotales();
   document.getElementById('ver-title').textContent=`Ppto. #${String(p.num).padStart(2,'0')} — ${p.cliente||'Sin cliente'}`;
   alert('✅ Guardado');
@@ -934,6 +950,7 @@ function generarPDF(){
   const verde=[122,144,85], verdeD=[90,110,58], blanco=[255,255,255];
   const grisC=[245,247,240], grisT=[100,110,80], negro=[30,32,24];
   const mostrarPrecios=p.mostrar_precios!==false;
+  const mostrarUsd=p.mostrar_usd!==false;
 
   // HEADER
   doc.setFillColor(...verde); doc.rect(0,0,W,42,'F');
@@ -961,14 +978,15 @@ function generarPDF(){
     doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(10);
     doc.text(`${numSec}. ${titulo}`,17,y+1); y+=9;
 
+    // column headers
     doc.setFillColor(220,230,205); doc.rect(14,y-3,W-28,6,'F');
     doc.setTextColor(...grisT); doc.setFontSize(8); doc.setFont('helvetica','bold');
     doc.text('Descripción',17,y+1);
+    doc.text('Cant.',120,y+1,{align:'right'});
     if(mostrarPrecios){
-      doc.text('Cant.',120,y+1,{align:'right'});
       doc.text('P. Unit.',150,y+1,{align:'right'});
+      doc.text('Subtotal',W-16,y+1,{align:'right'});
     }
-    doc.text('Subtotal',W-16,y+1,{align:'right'});
     y+=7;
 
     let sub=0;
@@ -977,18 +995,23 @@ function generarPDF(){
       if(i%2===0){ doc.setFillColor(250,252,246); doc.rect(14,y-3,W-28,6,'F'); }
       doc.setTextColor(...negro); doc.setFont('helvetica','normal'); doc.setFontSize(9);
       doc.text(item.desc||'',17,y+1);
+      doc.text(String(item.cant||1),120,y+1,{align:'right'});
       if(mostrarPrecios){
-        doc.text(String(item.cant||1),120,y+1,{align:'right'});
         doc.text('$'+Math.round(item.precio||0).toLocaleString('es-AR'),150,y+1,{align:'right'});
+        doc.text('$'+Math.round(tot).toLocaleString('es-AR'),W-16,y+1,{align:'right'});
       }
-      doc.text('$'+Math.round(tot).toLocaleString('es-AR'),W-16,y+1,{align:'right'});
       y+=6; if(y>255){doc.addPage();y=20;}
     });
-    doc.setFillColor(...grisC); doc.rect(120,y-2,W-134,7,'F');
-    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...verdeD);
-    doc.text('Subtotal',150,y+3,{align:'right'});
-    doc.text('$'+Math.round(sub).toLocaleString('es-AR'),W-16,y+3,{align:'right'});
-    y+=11;
+    // subtotal row — solo si se muestran precios
+    if(mostrarPrecios){
+      doc.setFillColor(...grisC); doc.rect(120,y-2,W-134,7,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...verdeD);
+      doc.text('Subtotal',150,y+3,{align:'right'});
+      doc.text('$'+Math.round(sub).toLocaleString('es-AR'),W-16,y+3,{align:'right'});
+      y+=11;
+    } else {
+      y+=4;
+    }
   }
 
   seccion('Plantas',p.plantas,1);
@@ -1000,7 +1023,7 @@ function generarPDF(){
   const subMacetas=(p.macetas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subExtras=(p.extras||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
   const subLog=(p.logistica||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*(i.precio||0),0);
-  const subMO=(p.mo_jornadas||1)*(p.mo_precio||130000);
+  const subMO=(p.mo_jornadas||1)*(p.mo_precio||0);
   const base=subPlantas+subMacetas+subExtras+subLog+subMO;
   const subHono=base*(p.hono_pct||15)/100;
   const total=base+subHono;
@@ -1009,12 +1032,16 @@ function generarPDF(){
   doc.setFillColor(...verde); doc.rect(14,y-4,W-28,8,'F');
   doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(10);
   doc.text('5. Mano de obra y honorarios',17,y+1); y+=9;
-  doc.setTextColor(...negro); doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  doc.setFillColor(250,252,246); doc.rect(14,y-3,W-28,6,'F');
-  doc.text(`Mano de obra (${p.mo_jornadas||1} jornada${(p.mo_jornadas||1)>1?'s':''})`,17,y+1);
-  doc.text('$'+Math.round(subMO).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); y+=6;
-  doc.text(`Honorarios paisajismo (${p.hono_pct||15}%)`,17,y+1);
-  doc.text('$'+Math.round(subHono).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); y+=9;
+  if(mostrarPrecios){
+    doc.setTextColor(...negro); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.setFillColor(250,252,246); doc.rect(14,y-3,W-28,6,'F');
+    doc.text(`Mano de obra (${p.mo_jornadas||1} jornada${(p.mo_jornadas||1)>1?'s':''})`,17,y+1);
+    doc.text('$'+Math.round(subMO).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); y+=6;
+    doc.text(`Honorarios paisajismo (${p.hono_pct||15}%)`,17,y+1);
+    doc.text('$'+Math.round(subHono).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); y+=9;
+  } else {
+    y+=4;
+  }
 
   if(y>230){doc.addPage();y=20;}
   doc.setFillColor(...verdeD); doc.rect(14,y-3,W-28,14,'F');
@@ -1024,7 +1051,10 @@ function generarPDF(){
   doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...grisT);
   doc.text(`Anticipo 70%: $${Math.round(total*.7).toLocaleString('es-AR')}`,18,y);
   doc.text(`Saldo 30%: $${Math.round(total*.3).toLocaleString('es-AR')}`,80,y);
-  doc.text(`TC $${(p.tc||1425).toLocaleString('es-AR')} · USD ${Math.round(total/(p.tc||1425)).toLocaleString('es-AR')}`,W-16,y,{align:'right'}); y+=12;
+  if(mostrarUsd){
+    doc.text(`TC $${(p.tc||1425).toLocaleString('es-AR')} · USD ${Math.round(total/(p.tc||1425)).toLocaleString('es-AR')}`,W-16,y,{align:'right'});
+  }
+  y+=12;
 
   if(y>230){doc.addPage();y=20;}
   doc.setFillColor(...grisC); doc.rect(14,y-3,W-28,6,'F');
