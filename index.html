@@ -94,8 +94,8 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 .ppto-header-title{font-size:18px;font-weight:500;flex:1}
 
 /* ITEMS TABLE */
-.item-header-row{display:grid;grid-template-columns:1fr 65px 100px 100px 32px;gap:8px;padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
-.item-row{display:grid;grid-template-columns:1fr 65px 100px 100px 32px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.item-header-row{display:grid;grid-template-columns:1.6fr 1fr 65px 100px 100px 32px;gap:8px;padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.item-row{display:grid;grid-template-columns:1.6fr 1fr 65px 100px 100px 32px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
 .item-row:last-child{border-bottom:none}
 .col-label{font-size:11px;color:var(--text-hint);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
 .item-total{font-size:13px;font-weight:600;text-align:right}
@@ -162,13 +162,18 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 .stat-bar-val{font-size:12px;font-weight:600;color:var(--verde-dark);min-width:80px;text-align:right}
 
 @media(max-width:600px){
-  .item-header-row,.item-row{grid-template-columns:1fr 55px 80px 32px}
-  .item-header-row .col-label:nth-child(3),.item-row input:nth-child(3){display:none}
+  .item-header-row,.item-row{grid-template-columns:1fr 55px 32px}
+  .item-header-row .col-label:not(:first-child):not(:last-child),.item-row input:not(:first-child):not(:last-child){display:none}
   .grid-2,.grid-3{grid-template-columns:1fr}
   .metrics{grid-template-columns:1fr 1fr}
   .ppto-item{grid-template-columns:36px 1fr auto}
   .ppto-fecha{display:none}
 }
+/* IMAGE THUMB */
+.img-thumb{width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;display:block}
+.img-add{width:36px;height:36px;border-radius:6px;border:1.5px dashed var(--border-dark);background:var(--verde-light);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--verde);transition:all .15s}
+.img-add:hover{border-color:var(--verde);background:var(--verde-mid)}
+.img-input{display:none}
 </style>
 </head>
 <body>
@@ -177,11 +182,15 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
   <div class="topbar-logo">
     <img id="logo-img" src="" alt="LyL">
     <div>
-      <div class="topbar-title">LyL Presupuestos</div>
+      <div class="topbar-title">LyL Macetas</div>
       <div class="topbar-sub">Paisajismo</div>
     </div>
   </div>
-  <button class="btn btn-primary btn-sm" onclick="showScreen('nuevo')">+ Nuevo</button>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:white" onclick="showScreen('lista');switchMainTab(document.querySelector('#screen-lista .tab'),'lista-tab')">📋 Todos</button>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:white" onclick="showScreen('lista');switchMainTab(document.querySelectorAll('#screen-lista .tab')[1],'stats-tab')">📊 Stats</button>
+    <button class="btn btn-primary btn-sm" onclick="showScreen('nuevo')">+ Nuevo</button>
+  </div>
 </div>
 
 <div class="container">
@@ -191,6 +200,10 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
   <div class="top-row">
     <h2>Presupuestos</h2>
     <button class="btn btn-primary" onclick="showScreen('nuevo')">+ Nuevo presupuesto</button>
+  </div>
+
+  <div style="margin-bottom:1rem">
+    <input type="text" id="search-input" placeholder="🔍  Buscar por cliente, proyecto o tipo..." oninput="renderLista()" style="background:var(--white)">
   </div>
 
   <div class="metrics">
@@ -303,16 +316,17 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
+        <div class="col-label">Observaciones</div>
         <div class="col-label" style="text-align:center">Cant.</div>
         <div class="col-label" style="text-align:right">P. unit.</div>
         <div class="col-label" style="text-align:right">Subtotal</div>
-        <div></div>
+        <div class="col-label" style="text-align:center">📷</div>
       </div>
       <div id="items-plantas"></div>
       <div class="total-bar"><span class="total-bar-label">Subtotal plantas</span><span class="total-bar-val" id="sub-plantas">$0</span></div>
     </div>
 
-    <!-- EXTRAS -->
+    <!-- MACETAS -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="section-title" style="margin:0">2. Macetas</div>
@@ -320,10 +334,11 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
+        <div class="col-label">Observaciones</div>
         <div class="col-label" style="text-align:center">Cant.</div>
         <div class="col-label" style="text-align:right">P. unit.</div>
         <div class="col-label" style="text-align:right">Subtotal</div>
-        <div></div>
+        <div class="col-label" style="text-align:center">📷</div>
       </div>
       <div id="items-macetas"></div>
       <div class="total-bar"><span class="total-bar-label">Subtotal macetas</span><span class="total-bar-val" id="sub-macetas">$0</span></div>
@@ -337,6 +352,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
+        <div class="col-label">Observaciones</div>
         <div class="col-label" style="text-align:center">Cant.</div>
         <div class="col-label" style="text-align:right">P. unit.</div>
         <div class="col-label" style="text-align:right">Subtotal</div>
@@ -354,6 +370,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
+        <div class="col-label">Observaciones</div>
         <div class="col-label" style="text-align:center">Cant.</div>
         <div class="col-label" style="text-align:right">P. unit.</div>
         <div class="col-label" style="text-align:right">Subtotal</div>
@@ -401,6 +418,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 
     <div class="accion-bar">
       <button class="btn" onclick="guardarPpto()">💾 Guardar</button>
+      <button class="btn" onclick="duplicarPpto()">📋 Duplicar</button>
       <button class="btn" onclick="showScreen('lista')">← Lista</button>
       <span style="flex:1"></span>
       <button class="btn btn-primary btn-lg" onclick="generarPDF()">📄 Generar PDF</button>
@@ -558,17 +576,23 @@ function switchMainTab(btn, tabId){
 
 // ===== LISTA =====
 function renderLista(){
-  const pp = state.presupuestos;
-  document.getElementById('m-total').textContent = pp.length;
-  document.getElementById('m-aprobados').textContent = fmtMoney(pp.filter(p=>p.estado==='aprobado').reduce((s,p)=>s+(p.total||0),0));
-  document.getElementById('m-enviados').textContent = fmtMoney(pp.filter(p=>p.estado==='enviado').reduce((s,p)=>s+(p.total||0),0));
-  const cont = document.getElementById('lista-container');
+  const q=(document.getElementById('search-input')?.value||'').toLowerCase().trim();
+  const pp=state.presupuestos;
+  document.getElementById('m-total').textContent=pp.length;
+  document.getElementById('m-aprobados').textContent=fmtMoney(pp.filter(p=>p.estado==='aprobado').reduce((s,p)=>s+(p.total||0),0));
+  document.getElementById('m-enviados').textContent=fmtMoney(pp.filter(p=>p.estado==='enviado').reduce((s,p)=>s+(p.total||0),0));
+  const cont=document.getElementById('lista-container');
   if(pp.length===0){
     cont.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🌿</div><div class="empty-state-title">Sin presupuestos todavía</div><div class="empty-state-sub">Creá tu primer presupuesto</div><button class="btn btn-primary" onclick="showScreen('nuevo')">+ Nuevo presupuesto</button></div>`;
     return;
   }
-  const sorted=[...pp].sort((a,b)=>(b.num||0)-(a.num||0));
-  cont.innerHTML = sorted.map(p=>`
+  let sorted=[...pp].sort((a,b)=>(b.num||0)-(a.num||0));
+  if(q) sorted=sorted.filter(p=>(p.cliente||'').toLowerCase().includes(q)||(p.proyecto||'').toLowerCase().includes(q)||(p.tipo||'').toLowerCase().includes(q));
+  if(sorted.length===0){
+    cont.innerHTML=`<div class="empty-state" style="padding:2rem"><div class="empty-state-title">Sin resultados para "${esc(q)}"</div></div>`;
+    return;
+  }
+  cont.innerHTML=sorted.map(p=>`
     <div class="ppto-item" onclick="abrirPpto(${p.id})">
       <div class="ppto-num">${String(p.num).padStart(2,'0')}</div>
       <div><div class="ppto-name">${esc(p.cliente)||'(Sin cliente)'}</div><div class="ppto-sub">${esc(p.proyecto)||'—'} · ${esc(p.tipo)||''}</div></div>
@@ -720,25 +744,35 @@ function abrirPpto(id){
 }
 
 // ===== ITEMS =====
+const CATS_CON_FOTO=['plantas','macetas'];
+
 function renderItems(cat, items){
+  const conFoto=CATS_CON_FOTO.includes(cat);
   const cont=document.getElementById('items-'+cat);
   if(!items||items.length===0){
     cont.innerHTML=`<div style="padding:10px 0;color:var(--text-hint);font-size:13px">Sin ítems. Usá "+ Ítem" para agregar.</div>`;
     return;
   }
-  cont.innerHTML=items.map((item,i)=>`
-    <div class="item-row">
+  cont.innerHTML=items.map((item,i)=>{
+    const fotoHtml=conFoto?(item.img
+      ?`<img src="${item.img}" class="img-thumb" onclick="verImagen('${cat}',${i})" title="Click para cambiar">`
+      :`<div class="img-add" onclick="triggerImg('${cat}',${i})" title="Agregar foto">+</div>`
+    ):'<div></div>';
+    return `<div class="item-row">
       <input type="text" value="${esc(item.desc||'')}" oninput="updateItem('${cat}',${i},'desc',this.value)" placeholder="Descripción">
+      <input type="text" value="${esc(item.obs||'')}" oninput="updateItem('${cat}',${i},'obs',this.value)" placeholder="Observaciones / sector">
       <input type="number" value="${item.cant||1}" min="0" step="0.5" oninput="updateItem('${cat}',${i},'cant',parseFloat(this.value)||0)" style="text-align:center">
       <input type="number" value="${item.precio||0}" min="0" oninput="updateItem('${cat}',${i},'precio',parseFloat(this.value)||0)" style="text-align:right" placeholder="0">
       <div class="item-total">${fmtMoney((item.cant||1)*(item.precio||0))}</div>
+      ${fotoHtml}
       <button class="item-del" onclick="removeItem('${cat}',${i})">×</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function addItem(cat){
   const p=getPpto(state.currentId); if(!p) return;
-  p[cat].push({desc:'',cant:1,precio:0});
+  p[cat].push({desc:'',obs:'',cant:1,precio:0,img:null});
   save(); renderItems(cat,p[cat]); calcTotales();
 }
 
@@ -751,12 +785,47 @@ function removeItem(cat,idx){
 function updateItem(cat,idx,field,val){
   const p=getPpto(state.currentId); if(!p) return;
   p[cat][idx][field]=val; save();
-  const rows=document.getElementById('items-'+cat).querySelectorAll('.item-row');
-  if(rows[idx]){
-    const tot=rows[idx].querySelector('.item-total');
-    if(tot) tot.textContent=fmtMoney((p[cat][idx].cant||1)*(p[cat][idx].precio||0));
+  if(field==='cant'||field==='precio'){
+    const rows=document.getElementById('items-'+cat).querySelectorAll('.item-row');
+    if(rows[idx]){
+      const tot=rows[idx].querySelector('.item-total');
+      if(tot) tot.textContent=fmtMoney((p[cat][idx].cant||1)*(p[cat][idx].precio||0));
+    }
+    calcTotales();
   }
-  calcTotales();
+}
+
+function triggerImg(cat,idx){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.className='img-input';
+  inp.onchange=e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      // Redimensionar a max 400x400 para no llenar localStorage
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=400;
+        let w=img.width, h=img.height;
+        if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        const b64=canvas.toDataURL('image/jpeg',0.82);
+        const p=getPpto(state.currentId); if(!p) return;
+        p[cat][idx].img=b64; save(); renderItems(cat,p[cat]);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+}
+
+function verImagen(cat,idx){
+  const p=getPpto(state.currentId); if(!p) return;
+  const item=p[cat][idx]; if(!item) return;
+  if(confirm('¿Reemplazar la imagen actual?')) triggerImg(cat,idx);
 }
 
 // ===== CALCULAR =====
@@ -941,6 +1010,19 @@ function eliminarPpto(){
   state.currentId=null; save(); showScreen('lista');
 }
 
+function duplicarPpto(){
+  const p=getPpto(state.currentId); if(!p) return;
+  const copia=JSON.parse(JSON.stringify(p));
+  copia.id=Date.now();
+  copia.num=nextNum();
+  copia.estado='borrador';
+  copia.fecha=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+  state.presupuestos.push(copia);
+  save();
+  alert(`✅ Presupuesto duplicado como #${String(copia.num).padStart(2,'0')}`);
+  abrirPpto(copia.id);
+}
+
 // ===== PDF =====
 function generarPDF(){
   const p=getPpto(state.currentId); if(!p) return;
@@ -955,9 +1037,9 @@ function generarPDF(){
   // HEADER
   doc.setFillColor(...verde); doc.rect(0,0,W,42,'F');
   doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(22);
-  doc.text('LyL Macetas',20,18);
+  doc.text('LyL Macetas Paisajismo',20,18);
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text('Paisajismo · Llave en mano',20,25);
+  doc.text('lylmacetas.com.ar',20,25);
   doc.setFont('helvetica','bold'); doc.setFontSize(13);
   doc.text(`Presupuesto N° ${String(p.num).padStart(3,'0')}`,W-20,15,{align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
@@ -977,41 +1059,43 @@ function generarPDF(){
     doc.setFillColor(...verde); doc.rect(14,y-4,W-28,8,'F');
     doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(10);
     doc.text(`${numSec}. ${titulo}`,17,y+1); y+=9;
-
-    // column headers
     doc.setFillColor(220,230,205); doc.rect(14,y-3,W-28,6,'F');
     doc.setTextColor(...grisT); doc.setFontSize(8); doc.setFont('helvetica','bold');
     doc.text('Descripción',17,y+1);
-    doc.text('Cant.',120,y+1,{align:'right'});
+    doc.text('Observaciones',80,y+1);
+    doc.text('Cant.',122,y+1,{align:'right'});
     if(mostrarPrecios){
-      doc.text('P. Unit.',150,y+1,{align:'right'});
+      doc.text('P. Unit.',152,y+1,{align:'right'});
       doc.text('Subtotal',W-16,y+1,{align:'right'});
     }
     y+=7;
-
     let sub=0;
     items.filter(i=>i.desc).forEach((item,i)=>{
       const tot=(item.cant||1)*(item.precio||0); sub+=tot;
       if(i%2===0){ doc.setFillColor(250,252,246); doc.rect(14,y-3,W-28,6,'F'); }
-      doc.setTextColor(...negro); doc.setFont('helvetica','normal'); doc.setFontSize(9);
-      doc.text(item.desc||'',17,y+1);
-      doc.text(String(item.cant||1),120,y+1,{align:'right'});
+      doc.setTextColor(...negro); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      const descStr=String(item.desc||'').substring(0,28);
+      doc.text(descStr,17,y+1);
+      if(item.obs){
+        doc.setTextColor(...grisT);
+        doc.text(String(item.obs).substring(0,22),80,y+1);
+        doc.setTextColor(...negro);
+      }
+      doc.setFontSize(9);
+      doc.text(String(item.cant||1),122,y+1,{align:'right'});
       if(mostrarPrecios){
-        doc.text('$'+Math.round(item.precio||0).toLocaleString('es-AR'),150,y+1,{align:'right'});
+        doc.text('$'+Math.round(item.precio||0).toLocaleString('es-AR'),152,y+1,{align:'right'});
         doc.text('$'+Math.round(tot).toLocaleString('es-AR'),W-16,y+1,{align:'right'});
       }
       y+=6; if(y>255){doc.addPage();y=20;}
     });
-    // subtotal row — solo si se muestran precios
     if(mostrarPrecios){
       doc.setFillColor(...grisC); doc.rect(120,y-2,W-134,7,'F');
       doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...verdeD);
-      doc.text('Subtotal',150,y+3,{align:'right'});
+      doc.text('Subtotal',152,y+3,{align:'right'});
       doc.text('$'+Math.round(sub).toLocaleString('es-AR'),W-16,y+3,{align:'right'});
       y+=11;
-    } else {
-      y+=4;
-    }
+    } else { y+=4; }
   }
 
   seccion('Plantas',p.plantas,1);
@@ -1073,12 +1157,40 @@ function generarPDF(){
       }); y+=3;
     });
 
+  // GALERÍA DE IMÁGENES (plantas + macetas con foto)
+  const itemsConFoto=[
+    ...(p.plantas||[]).filter(i=>i.desc&&i.img).map(i=>({...i,_sec:'Planta'})),
+    ...(p.macetas||[]).filter(i=>i.desc&&i.img).map(i=>({...i,_sec:'Maceta'}))
+  ];
+  if(itemsConFoto.length>0){
+    doc.addPage(); let gy=20;
+    doc.setFillColor(...verde); doc.rect(14,gy-4,W-28,8,'F');
+    doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('Imágenes de referencia',17,gy+1); gy+=14;
+    const imgW=54, imgH=44, cols=3, gap=5;
+    itemsConFoto.forEach((item,i)=>{
+      const col=i%cols;
+      const row=Math.floor(i/cols);
+      const x=14+col*(imgW+gap);
+      const iy=gy+row*(imgH+14);
+      if(iy+imgH+14>278) return;
+      try{ doc.addImage(item.img,'JPEG',x,iy,imgW,imgH,'','FAST'); }catch(e){}
+      doc.setFillColor(...grisC); doc.rect(x,iy+imgH,imgW,10,'F');
+      doc.setTextColor(...negro); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+      doc.text(String(item.desc||'').substring(0,22),x+imgW/2,iy+imgH+5,{align:'center'});
+      if(item.obs){
+        doc.setFont('helvetica','normal'); doc.setTextColor(...grisT);
+        doc.text(String(item.obs).substring(0,22),x+imgW/2,iy+imgH+9,{align:'center'});
+      }
+    });
+  }
+
   const totalPages=doc.getNumberOfPages();
   for(let i=1;i<=totalPages;i++){
     doc.setPage(i);
     doc.setFillColor(...verde); doc.rect(0,287,W,10,'F');
     doc.setTextColor(...blanco); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    doc.text('LyL Macetas · Nuñez, Buenos Aires · lylmacetas.com.ar',14,293);
+    doc.text('LyL Macetas Paisajismo · Nuñez, Buenos Aires · lylmacetas.com.ar',14,293);
     doc.text(`Página ${i} de ${totalPages}`,W-14,293,{align:'right'});
   }
 
