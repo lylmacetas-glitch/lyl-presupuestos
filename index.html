@@ -169,7 +169,21 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
   .ppto-item{grid-template-columns:36px 1fr auto}
   .ppto-fecha{display:none}
 }
-/* IMAGE THUMB */
+/* STATS FILTER */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.filter-bar select,.filter-bar input[type=date]{width:auto;padding:6px 10px;font-size:12px}
+.filter-label{font-size:12px;color:var(--text-soft);font-weight:500}
+/* CATÁLOGO */
+.cat-cat-header{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:2px solid var(--verde-mid);margin:1rem 0 .5rem}
+.cat-cat-title{font-size:12px;font-weight:700;color:var(--verde-dark);letter-spacing:.08em;text-transform:uppercase}
+.cat-item{display:grid;grid-template-columns:1fr 100px 110px 80px 32px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.cat-item:last-child{border-bottom:none}
+.cat-item-name{font-size:13px;font-weight:500}
+.cat-item-cat{font-size:11px;color:var(--text-hint)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--white);border-radius:var(--radius-lg);padding:1.5rem;width:min(480px,94vw);max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:500;margin-bottom:1.25rem}
+</style>
 .img-thumb{width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;display:block}
 .img-add{width:36px;height:36px;border-radius:6px;border:1.5px dashed var(--border-dark);background:var(--verde-light);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--verde);transition:all .15s}
 .img-add:hover{border-color:var(--verde);background:var(--verde-mid)}
@@ -215,6 +229,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
   <div class="tabs" style="margin-bottom:0">
     <button class="tab active" onclick="switchMainTab(this,'lista-tab')">Lista</button>
     <button class="tab" onclick="switchMainTab(this,'stats-tab')">Estadísticas</button>
+    <button class="tab" onclick="switchMainTab(this,'catalogo-tab')">📦 Catálogo</button>
   </div>
 
   <div id="lista-tab" class="tab-content active">
@@ -232,6 +247,10 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 
   <div id="stats-tab" class="tab-content" style="margin-top:1rem">
     <div id="stats-container"></div>
+  </div>
+
+  <div id="catalogo-tab" class="tab-content" style="margin-top:1rem">
+    <div id="catalogo-container"></div>
   </div>
 </div>
 
@@ -312,7 +331,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="section-title" style="margin:0">1. Plantas</div>
-        <button class="btn btn-sm" onclick="addItem('plantas')">+ Ítem</button>
+        <button class="btn btn-sm" onclick="abrirCatPicker('plantas')">+ Ítem</button>
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
@@ -330,7 +349,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="section-title" style="margin:0">2. Macetas</div>
-        <button class="btn btn-sm" onclick="addItem('macetas')">+ Ítem</button>
+        <button class="btn btn-sm" onclick="abrirCatPicker('macetas')">+ Ítem</button>
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
@@ -348,7 +367,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="section-title" style="margin:0">3. Sustratos e insumos</div>
-        <button class="btn btn-sm" onclick="addItem('extras')">+ Ítem</button>
+        <button class="btn btn-sm" onclick="abrirCatPicker('extras')">+ Ítem</button>
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
@@ -366,7 +385,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="section-title" style="margin:0">4. Logística y envío</div>
-        <button class="btn btn-sm" onclick="addItem('logistica')">+ Ítem</button>
+        <button class="btn btn-sm" onclick="abrirCatPicker('logistica')">+ Ítem</button>
       </div>
       <div class="item-header-row">
         <div class="col-label">Descripción</div>
@@ -572,6 +591,7 @@ function switchMainTab(btn, tabId){
   document.querySelectorAll('#screen-lista .tab-content').forEach(t=>t.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
   if(tabId==='stats-tab') renderStats();
+  if(tabId==='catalogo-tab') renderCatalogo();
 }
 
 // ===== LISTA =====
@@ -605,13 +625,70 @@ function renderLista(){
 function estadoLabel(e){ return {borrador:'Borrador',enviado:'Enviado',aprobado:'Aprobado',rechazado:'Rechazado'}[e||'borrador']||'Borrador'; }
 
 // ===== ESTADÍSTICAS =====
+let statsState = { mes: '', anio: '', desde: '', hasta: '' };
+
+function filtrarPptos(){
+  let pp = state.presupuestos;
+  const { mes, anio, desde, hasta } = statsState;
+  if(anio) pp = pp.filter(p => { const f = parseFecha(p.fecha); return f && f.getFullYear() === parseInt(anio); });
+  if(mes) pp = pp.filter(p => { const f = parseFecha(p.fecha); return f && (f.getMonth()+1) === parseInt(mes); });
+  if(desde) pp = pp.filter(p => { const f = parseFecha(p.fecha); return f && f >= new Date(desde); });
+  if(hasta) pp = pp.filter(p => { const f = parseFecha(p.fecha); return f && f <= new Date(hasta+'T23:59:59'); });
+  return pp;
+}
+
+function parseFecha(str){
+  if(!str) return null;
+  // Formato: "09 ene. 2025" o similar
+  const meses = {ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
+  const m = str.match(/(\d+)\s+(\w+)[\.\s]+(\d{4})/);
+  if(m){
+    const mes = meses[m[2].toLowerCase().replace('.','')];
+    if(mes!==undefined) return new Date(parseInt(m[3]), mes, parseInt(m[1]));
+  }
+  return null;
+}
+
+function getAniosDisponibles(){
+  const anios = new Set();
+  state.presupuestos.forEach(p => { const f=parseFecha(p.fecha); if(f) anios.add(f.getFullYear()); });
+  return [...anios].sort((a,b)=>b-a);
+}
+
 function renderStats(){
-  const pp = state.presupuestos;
   const cont = document.getElementById('stats-container');
+  const pp = filtrarPptos();
+  const allPp = state.presupuestos;
+  const anios = getAniosDisponibles();
+
+  const mesesNombres = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  const filterBar = `
+    <div class="card" style="padding:.75rem 1.25rem;margin-bottom:.75rem">
+      <div class="filter-bar">
+        <span class="filter-label">Filtrar por:</span>
+        <select onchange="statsState.anio=this.value;statsState.mes='';statsState.desde='';statsState.hasta='';renderStats()" style="width:auto">
+          <option value="">Todos los años</option>
+          ${anios.map(a=>`<option value="${a}" ${statsState.anio==a?'selected':''}>${a}</option>`).join('')}
+        </select>
+        <select onchange="statsState.mes=this.value;renderStats()" style="width:auto">
+          <option value="">Todos los meses</option>
+          ${mesesNombres.slice(1).map((m,i)=>`<option value="${i+1}" ${statsState.mes==i+1?'selected':''}>${m}</option>`).join('')}
+        </select>
+        <span class="filter-label" style="margin-left:8px">Rango:</span>
+        <input type="date" value="${statsState.desde}" onchange="statsState.desde=this.value;statsState.anio='';statsState.mes='';renderStats()">
+        <span class="filter-label">→</span>
+        <input type="date" value="${statsState.hasta}" onchange="statsState.hasta=this.value;statsState.anio='';statsState.mes='';renderStats()">
+        ${(statsState.anio||statsState.mes||statsState.desde||statsState.hasta)?`<button class="btn btn-sm btn-ghost" onclick="statsState={mes:'',anio:'',desde:'',hasta:''};renderStats()">✕ Limpiar</button>`:''}
+      </div>
+      ${pp.length<allPp.length?`<div class="hint">Mostrando ${pp.length} de ${allPp.length} presupuestos</div>`:''}
+    </div>`;
+
   if(pp.length===0){
-    cont.innerHTML=`<div class="card"><div class="empty-state" style="padding:2rem"><div class="empty-state-icon">📊</div><div class="empty-state-title">Sin datos todavía</div></div></div>`;
+    cont.innerHTML = filterBar + `<div class="card"><div class="empty-state" style="padding:2rem"><div class="empty-state-icon">📊</div><div class="empty-state-title">Sin datos para el período seleccionado</div></div></div>`;
     return;
   }
+
   const total = pp.reduce((s,p)=>s+(p.total||0),0);
   const aprobados = pp.filter(p=>p.estado==='aprobado');
   const enviados = pp.filter(p=>p.estado==='enviado');
@@ -624,35 +701,62 @@ function renderStats(){
   const tipoEntries = Object.entries(porTipo).sort((a,b)=>b[1]-a[1]);
   const maxTipo = tipoEntries[0]?.[1]||1;
 
-  // últimos 5
-  const ultimos = [...pp].sort((a,b)=>(b.num||0)-(a.num||0)).slice(0,5);
+  // por mes (para evolución)
+  const porMes = {};
+  pp.forEach(p=>{
+    const f=parseFecha(p.fecha);
+    if(!f) return;
+    const key=`${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}`;
+    const label=`${mesesNombres[f.getMonth()+1].substring(0,3)} ${f.getFullYear()}`;
+    if(!porMes[key]) porMes[key]={label,total:0,count:0};
+    porMes[key].total+=(p.total||0);
+    porMes[key].count++;
+  });
+  const mesEntries = Object.entries(porMes).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxMes = Math.max(...mesEntries.map(([,v])=>v.total),1);
 
-  cont.innerHTML = `
+  // todos los presupuestos ordenados para la tabla
+  const todosSorted = [...pp].sort((a,b)=>(b.num||0)-(a.num||0));
+
+  cont.innerHTML = filterBar + `
     <div class="grid-3" style="margin-bottom:.75rem">
-      <div class="metric"><div class="metric-label">Facturación total</div><div class="metric-val" style="font-size:16px">${fmtMoney(total)}</div></div>
-      <div class="metric"><div class="metric-label">Tasa de aprobación</div><div class="metric-val">${pp.length?Math.round(aprobados.length/pp.length*100):0}%</div><div class="metric-sub">${aprobados.length} de ${pp.length}</div></div>
-      <div class="metric"><div class="metric-label">Ticket promedio</div><div class="metric-val" style="font-size:16px">${fmtMoney(pp.length?total/pp.length:0)}</div></div>
+      <div class="metric"><div class="metric-label">Facturación</div><div class="metric-val" style="font-size:15px">${fmtMoney(total)}</div><div class="metric-sub">${pp.length} presupuestos</div></div>
+      <div class="metric"><div class="metric-label">Aprobación</div><div class="metric-val">${pp.length?Math.round(aprobados.length/pp.length*100):0}%</div><div class="metric-sub">${aprobados.length} aprobados</div></div>
+      <div class="metric"><div class="metric-label">Ticket promedio</div><div class="metric-val" style="font-size:15px">${fmtMoney(pp.length?total/pp.length:0)}</div></div>
     </div>
+
+    ${mesEntries.length>1?`<div class="card">
+      <div class="stat-section-title">Evolución mensual</div>
+      ${mesEntries.map(([,v])=>`<div class="stat-bar-row">
+        <div class="stat-bar-label">${v.label} <span style="color:var(--text-hint);font-weight:400">(${v.count})</span></div>
+        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${Math.round(v.total/maxMes*100)}%"></div></div>
+        <div class="stat-bar-val">${fmtMoney(v.total)}</div>
+      </div>`).join('')}
+    </div>`:''}
 
     <div class="card">
       <div class="stat-section-title">Por estado</div>
-      ${renderStatBar('Aprobados', aprobados.length, pp.length, fmtMoney(aprobados.reduce((s,p)=>s+(p.total||0),0)))}
-      ${renderStatBar('Enviados', enviados.length, pp.length, fmtMoney(enviados.reduce((s,p)=>s+(p.total||0),0)))}
-      ${renderStatBar('Borradores', borradores.length, pp.length, '')}
-      ${renderStatBar('Rechazados', rechazados.length, pp.length, fmtMoney(rechazados.reduce((s,p)=>s+(p.total||0),0)))}
+      ${renderStatBar('Aprobados',aprobados.length,pp.length,fmtMoney(aprobados.reduce((s,p)=>s+(p.total||0),0)))}
+      ${renderStatBar('Enviados',enviados.length,pp.length,fmtMoney(enviados.reduce((s,p)=>s+(p.total||0),0)))}
+      ${renderStatBar('Borradores',borradores.length,pp.length,'')}
+      ${renderStatBar('Rechazados',rechazados.length,pp.length,fmtMoney(rechazados.reduce((s,p)=>s+(p.total||0),0)))}
     </div>
 
     <div class="card">
       <div class="stat-section-title">Por tipo de trabajo</div>
-      ${tipoEntries.map(([tipo,val])=>renderStatBar(tipo, val, maxTipo, fmtMoney(val), true)).join('')}
+      ${tipoEntries.map(([tipo,val])=>renderStatBar(tipo,val,maxTipo,fmtMoney(val),true)).join('')}
     </div>
 
-    <div class="card">
-      <div class="stat-section-title">Últimos presupuestos</div>
-      ${ultimos.map(p=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="abrirPpto(${p.id})">
-          <div><span style="font-size:12px;color:var(--text-hint);margin-right:8px">#${String(p.num).padStart(2,'0')}</span><span style="font-size:13px">${esc(p.cliente)||'Sin cliente'}</span></div>
-          <div style="display:flex;align-items:center;gap:10px"><span class="badge badge-${p.estado||'borrador'}">${estadoLabel(p.estado)}</span><span style="font-size:13px;font-weight:600">${fmtMoney(p.total)}</span></div>
+    <div class="card" style="padding:0">
+      <div style="padding:.75rem 1.25rem;border-bottom:1px solid var(--border)">
+        <div class="stat-section-title" style="margin:0">Todos los presupuestos del período</div>
+      </div>
+      ${todosSorted.map(p=>`
+        <div style="display:grid;grid-template-columns:36px 1fr auto auto;gap:10px;align-items:center;padding:10px 1.25rem;border-bottom:1px solid var(--border);cursor:pointer" onclick="abrirPpto(${p.id})">
+          <div class="ppto-num" style="width:28px;height:28px;font-size:11px">${String(p.num).padStart(2,'0')}</div>
+          <div><div style="font-size:13px;font-weight:500">${esc(p.cliente)||'Sin cliente'}</div><div style="font-size:11px;color:var(--text-hint)">${esc(p.proyecto)||'—'} · ${p.fecha||''}</div></div>
+          <span class="badge badge-${p.estado||'borrador'}">${estadoLabel(p.estado)}</span>
+          <div style="font-size:13px;font-weight:600;text-align:right">${fmtMoney(p.total)}</div>
         </div>`).join('')}
     </div>`;
 }
@@ -755,8 +859,8 @@ function renderItems(cat, items){
   }
   cont.innerHTML=items.map((item,i)=>{
     const fotoHtml=conFoto?(item.img
-      ?`<img src="${item.img}" class="img-thumb" onclick="verImagen('${cat}',${i})" title="Click para cambiar">`
-      :`<div class="img-add" onclick="triggerImg('${cat}',${i})" title="Agregar foto">+</div>`
+      ?`<img src="${item.img}" class="img-thumb" onclick="opcionesImg('${cat}',${i})" title="Click para opciones">`
+      :`<div class="img-add" onclick="opcionesImg('${cat}',${i})" title="Agregar imagen">+</div>`
     ):'<div></div>';
     return `<div class="item-row">
       <input type="text" value="${esc(item.desc||'')}" oninput="updateItem('${cat}',${i},'desc',this.value)" placeholder="Descripción">
@@ -822,10 +926,67 @@ function triggerImg(cat,idx){
   inp.click();
 }
 
-function verImagen(cat,idx){
+function opcionesImg(cat,idx){
+  // Mostrar mini modal con opciones
+  const existing = document.getElementById('img-modal');
+  if(existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'img-modal';
+  div.className = 'modal-overlay';
+  div.innerHTML = `
+    <div class="modal-box" style="max-width:360px">
+      <div class="modal-title">Imagen de referencia</div>
+      <div class="field">
+        <label class="input-label">Pegar URL de imagen</label>
+        <input type="url" id="img-url-input" placeholder="https://..." style="margin-bottom:8px">
+        <button class="btn btn-primary" style="width:100%" onclick="cargarImgUrl('${cat}',${idx})">Usar esta URL</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:12px 0"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--text-hint)">o</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+      <button class="btn" style="width:100%;margin-bottom:8px" onclick="triggerImg('${cat}',${idx});document.getElementById('img-modal').remove()">📁 Subir desde PC</button>
+      <button class="btn btn-danger" style="width:100%;margin-bottom:8px" onclick="quitarImg('${cat}',${idx})">🗑 Quitar imagen</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="document.getElementById('img-modal').remove()">Cancelar</button>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', e=>{ if(e.target===div) div.remove(); });
+}
+
+function cargarImgUrl(cat,idx){
+  const url = document.getElementById('img-url-input')?.value?.trim();
+  if(!url){ alert('Ingresá una URL válida'); return; }
   const p=getPpto(state.currentId); if(!p) return;
-  const item=p[cat][idx]; if(!item) return;
-  if(confirm('¿Reemplazar la imagen actual?')) triggerImg(cat,idx);
+  // Precargar la imagen para verificar que carga
+  const testImg = new Image();
+  testImg.crossOrigin='anonymous';
+  testImg.onload = () => {
+    // Redimensionar via canvas para normalizar
+    const MAX=400;
+    let w=testImg.width, h=testImg.height;
+    if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    try{
+      canvas.getContext('2d').drawImage(testImg,0,0,w,h);
+      p[cat][idx].img=canvas.toDataURL('image/jpeg',0.82);
+    }catch(e){
+      // CORS bloqueó el canvas, guardar la URL directamente
+      p[cat][idx].img=url;
+    }
+    save(); renderItems(cat,p[cat]);
+    document.getElementById('img-modal')?.remove();
+  };
+  testImg.onerror = () => {
+    // Si falla carga, guardar URL igual (puede cargar en PDF si es accesible)
+    p[cat][idx].img=url;
+    save(); renderItems(cat,p[cat]);
+    document.getElementById('img-modal')?.remove();
+  };
+  testImg.src=url;
+}
+
+function quitarImg(cat,idx){
+  const p=getPpto(state.currentId); if(!p) return;
+  p[cat][idx].img=null; save(); renderItems(cat,p[cat]);
+  document.getElementById('img-modal')?.remove();
 }
 
 // ===== CALCULAR =====
@@ -1203,6 +1364,208 @@ function compartirWA(){
   const msg=encodeURIComponent(`Hola${p.cliente?' '+p.cliente:''}! 🌿 Te envío el presupuesto N° ${String(p.num).padStart(3,'0')} de *LyL Macetas* — *${p.proyecto||'tu proyecto'}*.\n\n*Total: ${fmtMoney(p.total||0)}*\n\n(El PDF llega adjunto)`);
   const tel=(p.tel||'').replace(/\D/g,'');
   window.open(tel?`https://wa.me/${tel}?text=${msg}`:`https://wa.me/?text=${msg}`,'_blank');
+}
+
+// ===== CATÁLOGO =====
+const CATS_CATALOGO = ['Plantas','Macetas','Sustratos','Logística','Otros'];
+
+function getCatalogo(){ return state.catalogo || []; }
+function saveCatalogo(items){ state.catalogo=items; localStorage.setItem('lyl_catalogo_v1', JSON.stringify(items)); }
+// Load catálogo from its own key
+if(!state.catalogo){
+  state.catalogo = JSON.parse(localStorage.getItem('lyl_catalogo_v1')||'[]');
+}
+
+function renderCatalogo(){
+  const cont = document.getElementById('catalogo-container');
+  const items = getCatalogo();
+
+  // Agrupar por categoría
+  const byCat = {};
+  CATS_CATALOGO.forEach(c=>byCat[c]=[]);
+  items.forEach(item=>{ const c=item.cat||'Otros'; if(!byCat[c]) byCat[c]=[]; byCat[c].push(item); });
+
+  const catRows = CATS_CATALOGO.filter(c=>byCat[c].length>0).map(cat=>`
+    <div class="cat-cat-header">
+      <span class="cat-cat-title">${cat}</span>
+      <button class="btn btn-sm" onclick="abrirModalCatalogo(null,'${cat}')">+ Agregar</button>
+    </div>
+    ${byCat[cat].map((item,i)=>`
+      <div class="cat-item">
+        <div>
+          <div class="cat-item-name">${esc(item.nombre||'')}</div>
+          ${item.obs?`<div class="cat-item-cat">${esc(item.obs)}</div>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--text-soft)">${esc(item.unidad||'')}</div>
+        <div style="font-size:13px;font-weight:600;text-align:right">${fmtMoney(item.precio||0)}</div>
+        <div style="font-size:11px;color:var(--text-hint);text-align:right">${item.precio2?fmtMoney(item.precio2):''}</div>
+        <div style="display:flex;gap:4px">
+          <button class="item-del" onclick="abrirModalCatalogo(${items.indexOf(item)},null)" title="Editar">✏</button>
+          <button class="item-del" onclick="eliminarCatItem(${items.indexOf(item)})" title="Eliminar">×</button>
+        </div>
+      </div>`).join('')}`).join('');
+
+  const vacio = items.length===0 ? `
+    <div class="empty-state" style="padding:2.5rem">
+      <div class="empty-state-icon">📦</div>
+      <div class="empty-state-title">El catálogo está vacío</div>
+      <div class="empty-state-sub">Agregá tus ítems más usados para cargarlos rápido en los presupuestos</div>
+    </div>` : '';
+
+  cont.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--text-soft)">${items.length} ítems guardados</div>
+      <button class="btn btn-primary" onclick="abrirModalCatalogo(null,null)">+ Nuevo ítem</button>
+    </div>
+    <div class="card">${vacio || catRows}</div>
+    <div class="hint" style="margin-top:8px">Los precios del catálogo son de referencia. Al usar un ítem en un presupuesto podés modificarlo.</div>`;
+}
+
+function abrirModalCatalogo(idx, catDefault){
+  const items = getCatalogo();
+  const item = idx!==null ? items[idx] : null;
+  const existing = document.getElementById('cat-modal');
+  if(existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'cat-modal';
+  div.className = 'modal-overlay';
+  div.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-title">${item?'Editar ítem':'Nuevo ítem del catálogo'}</div>
+      <div class="field"><label class="input-label">Categoría</label>
+        <select id="cm-cat">
+          ${CATS_CATALOGO.map(c=>`<option value="${c}" ${(item?.cat||catDefault||'Plantas')===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label class="input-label">Nombre</label>
+        <input type="text" id="cm-nombre" value="${esc(item?.nombre||'')}" placeholder="Ej: Dietes bicolor E10">
+      </div>
+      <div class="grid-2">
+        <div class="field"><label class="input-label">Precio lista ($)</label>
+          <input type="number" id="cm-precio" value="${item?.precio||''}" placeholder="0" min="0">
+        </div>
+        <div class="field"><label class="input-label">Precio mayorista ($)</label>
+          <input type="number" id="cm-precio2" value="${item?.precio2||''}" placeholder="Opcional" min="0">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label class="input-label">Unidad</label>
+          <input type="text" id="cm-unidad" value="${esc(item?.unidad||'')}" placeholder="Ej: E10, 50lts, unidad">
+        </div>
+        <div class="field"><label class="input-label">Observación (opcional)</label>
+          <input type="text" id="cm-obs" value="${esc(item?.obs||'')}" placeholder="Ej: vivero local">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-ghost" onclick="document.getElementById('cat-modal').remove()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarCatItem(${idx})">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', e=>{ if(e.target===div) div.remove(); });
+  setTimeout(()=>document.getElementById('cm-nombre')?.focus(), 50);
+}
+
+function guardarCatItem(idx){
+  const items = getCatalogo();
+  const item = {
+    cat: document.getElementById('cm-cat').value,
+    nombre: document.getElementById('cm-nombre').value.trim(),
+    precio: parseFloat(document.getElementById('cm-precio').value)||0,
+    precio2: parseFloat(document.getElementById('cm-precio2').value)||0,
+    unidad: document.getElementById('cm-unidad').value.trim(),
+    obs: document.getElementById('cm-obs').value.trim()
+  };
+  if(!item.nombre){ alert('El nombre es obligatorio'); return; }
+  if(idx!==null) items[idx]=item;
+  else items.push(item);
+  saveCatalogo(items);
+  document.getElementById('cat-modal')?.remove();
+  renderCatalogo();
+}
+
+function eliminarCatItem(idx){
+  if(!confirm('¿Eliminar este ítem del catálogo?')) return;
+  const items = getCatalogo();
+  items.splice(idx,1);
+  saveCatalogo(items);
+  renderCatalogo();
+}
+
+// Usar ítem del catálogo en un presupuesto (desde el botón + de cada sección)
+function usarCatItem(cat, catItemIdx){
+  const items = getCatalogo();
+  const catItem = items[catItemIdx];
+  if(!catItem) return;
+  const p = getPpto(state.currentId); if(!p) return;
+  // Mapear categoría catálogo → sección presupuesto
+  const catMap = {'Plantas':'plantas','Macetas':'macetas','Sustratos':'extras','Logística':'logistica','Otros':'extras'};
+  const sec = catMap[catItem.cat]||cat;
+  if(!p[sec]) p[sec]=[];
+  p[sec].push({desc:catItem.nombre+(catItem.unidad?' '+catItem.unidad:''), obs:catItem.obs||'', cant:1, precio:catItem.precio||0, img:null});
+  save();
+  renderItems(sec, p[sec]);
+  calcTotales();
+  document.getElementById('cat-picker-modal')?.remove();
+}
+
+// Modal para elegir del catálogo al agregar ítem
+function abrirCatPicker(cat){
+  const items = getCatalogo();
+  const existing = document.getElementById('cat-picker-modal');
+  if(existing) existing.remove();
+  if(items.length===0){
+    // Catálogo vacío: agregar ítem directo
+    addItem(cat); return;
+  }
+  const div = document.createElement('div');
+  div.id = 'cat-picker-modal';
+  div.className = 'modal-overlay';
+  const catMap = {'plantas':'Plantas','macetas':'Macetas','extras':'Sustratos','logistica':'Logística'};
+  const catFiltro = catMap[cat];
+  const filtrados = items.filter(i=>!catFiltro||i.cat===catFiltro||i.cat==='Otros');
+  const todos = items;
+
+  div.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-title">Elegir del catálogo</div>
+      <input type="text" id="cat-picker-search" placeholder="🔍 Buscar..." oninput="filtrarPicker()" style="margin-bottom:12px">
+      <div id="cat-picker-list" style="max-height:300px;overflow-y:auto">
+        ${renderPickerItems(filtrados, items)}
+      </div>
+      <div style="display:flex;gap:8px;justify-content:space-between;margin-top:12px">
+        <button class="btn btn-ghost btn-sm" onclick="addItem('${cat}');document.getElementById('cat-picker-modal').remove()">+ Ítem en blanco</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('cat-picker-modal').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  div.dataset.cat = cat;
+  div.dataset.allItems = JSON.stringify(todos.map((_,i)=>i));
+  document.body.appendChild(div);
+  div.addEventListener('click', e=>{ if(e.target===div) div.remove(); });
+  setTimeout(()=>document.getElementById('cat-picker-search')?.focus(), 50);
+}
+
+function renderPickerItems(filtrados, allItems){
+  if(filtrados.length===0) return `<div style="padding:1rem;text-align:center;color:var(--text-hint);font-size:13px">Sin resultados</div>`;
+  return filtrados.map(item=>{
+    const idx = allItems.indexOf(item);
+    const cat = document.getElementById('cat-picker-modal')?.dataset.cat||'extras';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer" onclick="usarCatItem('${cat}',${idx})">
+      <div><div style="font-size:13px;font-weight:500">${esc(item.nombre||'')} ${item.unidad?'<span style=\'color:var(--text-hint);font-size:11px\'>'+esc(item.unidad)+'</span>':''}</div>
+      ${item.obs?`<div style="font-size:11px;color:var(--text-hint)">${esc(item.obs)}</div>`:''}
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--verde-dark);white-space:nowrap;margin-left:12px">${fmtMoney(item.precio)}</div>
+    </div>`;
+  }).join('');
+}
+
+function filtrarPicker(){
+  const q = (document.getElementById('cat-picker-search')?.value||'').toLowerCase();
+  const items = getCatalogo();
+  const filtrados = q ? items.filter(i=>(i.nombre||'').toLowerCase().includes(q)||(i.obs||'').toLowerCase().includes(q)) : items;
+  const list = document.getElementById('cat-picker-list');
+  if(list) list.innerHTML = renderPickerItems(filtrados, items);
 }
 
 // ===== INIT =====
