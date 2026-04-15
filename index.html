@@ -173,6 +173,11 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 .filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
 .filter-bar select,.filter-bar input[type=date]{width:auto;padding:6px 10px;font-size:12px}
 .filter-label{font-size:12px;color:var(--text-soft);font-weight:500}
+/* HISTORIAL */
+.hist-item{padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.hist-item:last-child{border-bottom:none}
+.hist-num{font-weight:600;color:var(--verde-dark);margin-right:6px}
+.hist-fecha{color:var(--text-hint)}
 /* CATÁLOGO */
 .cat-cat-header{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:2px solid var(--verde-mid);margin:1rem 0 .5rem}
 .cat-cat-title{font-size:12px;font-weight:700;color:var(--verde-dark);letter-spacing:.08em;text-transform:uppercase}
@@ -269,13 +274,15 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
     <div class="grid-2">
       <div class="field">
         <label class="input-label">Tipo de trabajo</label>
-        <select id="new-tipo">
+        <select id="new-tipo" onchange="toggleTipoLibre('new')">
           <option>Balcón</option>
           <option>Terraza</option>
           <option>Proyecto de paisajismo</option>
           <option>Venta de macetas e insumos</option>
           <option>Maceta + planta</option>
+          <option value="__libre__">Otro (escribir)...</option>
         </select>
+        <input type="text" id="new-tipo-libre" placeholder="Título del proyecto..." style="display:none;margin-top:6px">
       </div>
       <div class="field"><label class="input-label">Teléfono / WhatsApp cliente</label><input type="text" id="new-tel" placeholder="+54 9 11 1234-5678"></div>
     </div>
@@ -445,6 +452,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       <button class="btn" onclick="duplicarPpto()">📋 Duplicar</button>
       <button class="btn" onclick="showScreen('lista')">← Lista</button>
       <span style="flex:1"></span>
+      <button class="btn" onclick="mostrarListaCompras()">🛒 Lista de compras</button>
       <button class="btn btn-primary btn-lg" onclick="generarPDF()">📄 Generar PDF</button>
       <button class="btn btn-whatsapp btn-lg" onclick="compartirWA()">📲 WhatsApp</button>
     </div>
@@ -502,19 +510,22 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       <div class="grid-2">
         <div class="field">
           <label class="input-label">Tipo de trabajo</label>
-          <select id="edit-tipo">
+          <select id="edit-tipo" onchange="toggleTipoLibre('edit')">
             <option>Balcón</option>
             <option>Terraza</option>
             <option>Proyecto de paisajismo</option>
             <option>Venta de macetas e insumos</option>
             <option>Maceta + planta</option>
+            <option value="__libre__">Otro (escribir)...</option>
           </select>
+          <input type="text" id="edit-tipo-libre" placeholder="Título del proyecto..." style="display:none;margin-top:6px">
         </div>
         <div class="field"><label class="input-label">Tel / WhatsApp</label><input type="text" id="edit-tel"></div>
       </div>
       <div class="field"><label class="input-label">Estado</label><div class="status-bar" id="status-bar"></div></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="mostrarHistorial()">📋 Ver historial</button>
       <button class="btn btn-danger" onclick="eliminarPpto()">🗑 Eliminar</button>
       <button class="btn btn-primary" onclick="guardarPpto()">Guardar cambios</button>
     </div>
@@ -783,7 +794,7 @@ function crearPpto(){
     id, num:nextNum(),
     cliente:document.getElementById('new-cliente').value.trim(),
     proyecto:document.getElementById('new-proyecto').value.trim(),
-    tipo:document.getElementById('new-tipo').value,
+    tipo:getTipoValue('new'),
     tel:document.getElementById('new-tel').value.trim(),
     estado:'borrador',
     fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'}),
@@ -833,9 +844,17 @@ function abrirPpto(id){
 
   document.getElementById('edit-cliente').value=p.cliente||'';
   document.getElementById('edit-proyecto').value=p.proyecto||'';
-  const tipoSel=document.getElementById('edit-tipo');
-  tipoSel.value=p.tipo||'Terraza';
-  if(tipoSel.value!==p.tipo) tipoSel.selectedIndex=0;
+  // Tipo: si no está en las opciones predefinidas, usar "Otro"
+  const tiposSel=['Balcón','Terraza','Proyecto de paisajismo','Venta de macetas e insumos','Maceta + planta'];
+  const editTipo=document.getElementById('edit-tipo');
+  const editTipoLibre=document.getElementById('edit-tipo-libre');
+  if(tiposSel.includes(p.tipo)){
+    editTipo.value=p.tipo;
+    if(editTipoLibre){ editTipoLibre.style.display='none'; editTipoLibre.value=''; }
+  } else {
+    editTipo.value='__libre__';
+    if(editTipoLibre){ editTipoLibre.style.display='block'; editTipoLibre.value=p.tipo||''; }
+  }
   document.getElementById('edit-tel').value=p.tel||'';
   renderStatusBar(p.estado);
 
@@ -1089,8 +1108,18 @@ function calcTotales(){
 // ===== GANANCIA =====
 function renderGanancia(){
   const p=getPpto(state.currentId); if(!p) return;
-  const cs=p.costos_seccion||{plantas:0,macetas:0,extras:0,logistica:0,mo:0};
   const pe=(item)=>{ const m=item.margen||0; return m>0?Math.round((item.costo||0)*(1+m/100)):(item.precio||0); };
+
+  // Auto-calcular costos desde los ítems (suma de costo×cant por sección)
+  const costoItemsPlantas=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0);
+  const costoItemsMacetas=(p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0);
+  const costoItemsExtras=(p.extras||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0);
+  const costoItemsLogistica=(p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0);
+
+  const cs=p.costos_seccion||{plantas:0,macetas:0,extras:0,logistica:0,mo:0};
+  // Usar el costo real de ítems si existe, sino el manual
+  const costoEfectivo=(key, autoVal)=> autoVal>0 ? autoVal : (cs[key]||0);
+
   const subPlantas=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0);
   const subMacetas=(p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0);
   const subExtras=(p.extras||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0);
@@ -1106,24 +1135,26 @@ function renderGanancia(){
   const total=base+subHono+montoComm;
 
   const secciones=[
-    {key:'plantas',label:'Plantas',cobrado:subPlantas},
-    {key:'macetas',label:'Macetas',cobrado:subMacetas},
-    {key:'extras',label:'Sustratos e insumos',cobrado:subExtras},
-    {key:'logistica',label:'Logística y envío',cobrado:subLogistica},
-    {key:'mo',label:'Mano de obra + honorarios',cobrado:subMO+subHono},
+    {key:'plantas', label:'Plantas', cobrado:subPlantas, autoC:costoItemsPlantas},
+    {key:'macetas', label:'Macetas', cobrado:subMacetas, autoC:costoItemsMacetas},
+    {key:'extras',  label:'Sustratos e insumos', cobrado:subExtras, autoC:costoItemsExtras},
+    {key:'logistica',label:'Logística y envío', cobrado:subLogistica, autoC:costoItemsLogistica},
+    {key:'mo',      label:'Mano de obra + honorarios', cobrado:subMO+subHono, autoC:0},
   ];
 
   document.getElementById('ganancia-rows').innerHTML=secciones.map(sec=>{
-    const costo=cs[sec.key]||0;
-    const gan=sec.cobrado-costo;
+    const costoUsado=costoEfectivo(sec.key, sec.autoC);
+    const gan=sec.cobrado-costoUsado;
     const pct=sec.cobrado>0?Math.round(gan/sec.cobrado*100):0;
+    const autoTag=sec.autoC>0?`<span style="font-size:10px;color:var(--verde-dark);background:var(--verde-light);padding:1px 5px;border-radius:4px;margin-left:4px">auto</span>`:'';
     return `<div style="display:grid;grid-template-columns:1fr 110px 100px;gap:8px;align-items:center;margin-bottom:10px">
       <div>
-        <div style="font-size:12px;font-weight:600;color:var(--warn-text);margin-bottom:3px">${sec.label}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--warn-text);margin-bottom:3px">${sec.label}${autoTag}</div>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:11px;color:var(--text-hint)">Costo real:</span>
-          <input type="number" value="${costo}" oninput="updateCosto('${sec.key}',parseFloat(this.value)||0)" style="width:110px;padding:4px 8px;font-size:12px" placeholder="$0">
+          <input type="number" value="${costoUsado||''}" oninput="updateCosto('${sec.key}',parseFloat(this.value)||0)" style="width:110px;padding:4px 8px;font-size:12px" placeholder="${sec.autoC>0?fmtMoney(sec.autoC):'$0'}">
         </div>
+        ${sec.autoC>0?`<div style="font-size:10px;color:var(--text-hint);margin-top:2px">Calculado desde ítems: ${fmtMoney(sec.autoC)}</div>`:''}
       </div>
       <div style="text-align:right">
         <div style="font-size:11px;color:var(--text-hint)">Cobrado</div>
@@ -1137,12 +1168,10 @@ function renderGanancia(){
     </div>`;
   }).join('');
 
-  const totalCostos=Object.values(cs).reduce((s,v)=>s+(v||0),0);
-  const gananciaTotal=total-totalCostos;
+  const costoTotal=secciones.reduce((s,sec)=>s+costoEfectivo(sec.key,sec.autoC),0);
+  const gananciaTotal=total-costoTotal;
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   set('ganancia-total',fmtMoney(gananciaTotal));
-
-  // actualizar comisiones con total real
   renderComisiones(p.comisiones||[]);
 }
 
@@ -1211,14 +1240,23 @@ function guardarPpto(){
   const p=getPpto(state.currentId); if(!p) return;
   p.cliente=document.getElementById('edit-cliente').value.trim()||p.cliente;
   p.proyecto=document.getElementById('edit-proyecto').value.trim()||p.proyecto;
-  p.tipo=document.getElementById('edit-tipo').value||p.tipo;
+  p.tipo=getTipoValue('edit')||p.tipo;
   p.tel=document.getElementById('edit-tel').value.trim()||p.tel;
   p.nota_incluye=document.getElementById('nota-incluye').value;
   p.nota_pago=document.getElementById('nota-pago').value;
   p.nota_garantia=document.getElementById('nota-garantia').value;
   p.nota_plantas=document.getElementById('nota-plantas').value;
   p.nota_validez=parseInt(document.getElementById('nota-validez').value)||7;
-  // mostrar_precios se guarda en tiempo real desde onTogglePrecios
+  // Guardar snapshot de historial
+  if(!p.historial) p.historial=[];
+  p.historial.push({
+    fecha:new Date().toLocaleString('es-AR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    total:p.total||0,
+    estado:p.estado||'borrador',
+    resumen:`${(p.plantas||[]).filter(i=>i.desc).length} plantas, ${(p.macetas||[]).filter(i=>i.desc).length} macetas`
+  });
+  // Mantener solo los últimos 10
+  if(p.historial.length>10) p.historial=p.historial.slice(-10);
   save(); calcTotales();
   document.getElementById('ver-title').textContent=`Ppto. #${String(p.num).padStart(2,'0')} — ${p.cliente||'Sin cliente'}`;
   alert('✅ Guardado');
@@ -1230,7 +1268,20 @@ function eliminarPpto(){
   state.currentId=null; save(); showScreen('lista');
 }
 
-function duplicarPpto(){
+function getTipoValue(prefix){
+  const sel=document.getElementById(prefix+'-tipo');
+  const libre=document.getElementById(prefix+'-tipo-libre');
+  if(sel&&sel.value==='__libre__') return (libre&&libre.value.trim())||'Personalizado';
+  return sel?sel.value:'';
+}
+
+function toggleTipoLibre(prefix){
+  const sel=document.getElementById(prefix+'-tipo');
+  const libre=document.getElementById(prefix+'-tipo-libre');
+  if(!sel||!libre) return;
+  libre.style.display=sel.value==='__libre__'?'block':'none';
+  if(sel.value==='__libre__') libre.focus();
+}
   const p=getPpto(state.currentId); if(!p) return;
   const copia=JSON.parse(JSON.stringify(p));
   copia.id=Date.now();
@@ -1631,6 +1682,116 @@ function filtrarPicker(){
   const filtrados = q ? items.filter(i=>(i.nombre||'').toLowerCase().includes(q)||(i.obs||'').toLowerCase().includes(q)) : items;
   const list = document.getElementById('cat-picker-list');
   if(list) list.innerHTML = renderPickerItems(filtrados, items);
+}
+
+// ===== LISTA DE COMPRAS =====
+function mostrarListaCompras(){
+  const p=getPpto(state.currentId); if(!p) return;
+  const existing=document.getElementById('compras-modal');
+  if(existing) existing.remove();
+
+  // Agrupar todos los ítems por categoría
+  const secciones=[
+    {label:'🌿 Plantas', items:p.plantas||[]},
+    {label:'🪴 Macetas', items:p.macetas||[]},
+    {label:'🌱 Sustratos e insumos', items:p.extras||[]},
+    {label:'🚚 Logística y envío', items:p.logistica||[]},
+  ];
+
+  let totalCostos=0;
+  const seccionesHtml=secciones.map(sec=>{
+    const itemsFiltrados=(sec.items||[]).filter(i=>i.desc);
+    if(itemsFiltrados.length===0) return '';
+    const rows=itemsFiltrados.map(item=>{
+      const costo=(item.costo||0)*(item.cant||1);
+      totalCostos+=costo;
+      return `<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <span style="font-size:13px;font-weight:500">${esc(item.desc)}</span>
+          ${item.obs?`<span style="font-size:11px;color:var(--text-hint);margin-left:6px">${esc(item.obs)}</span>`:''}
+        </div>
+        <div style="display:flex;gap:14px;align-items:baseline;flex-shrink:0;margin-left:12px">
+          <span style="font-size:13px;color:var(--text-soft)">× ${item.cant||1}</span>
+          ${costo>0?`<span style="font-size:12px;color:var(--text-hint)">${fmtMoney(costo)}</span>`:''}
+          <input type="checkbox" style="width:16px;height:16px;cursor:pointer" title="Marcar como comprado">
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-dark);letter-spacing:.08em;text-transform:uppercase;padding:6px 0;border-bottom:2px solid var(--verde-mid);margin-bottom:4px">${sec.label}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  const div=document.createElement('div');
+  div.id='compras-modal';
+  div.className='modal-overlay';
+  div.innerHTML=`
+    <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div class="modal-title" style="margin:0">🛒 Lista de compras</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('compras-modal').remove()">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:1rem">
+        <strong>${esc(p.cliente||'Sin cliente')}</strong> · ${esc(p.proyecto||'—')} · Ppto. #${String(p.num).padStart(2,'0')}
+      </div>
+      ${seccionesHtml||'<div style="color:var(--text-hint);text-align:center;padding:1rem">No hay ítems cargados</div>'}
+      ${totalCostos>0?`<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid var(--verde-mid);margin-top:8px">
+        <span style="font-size:13px;font-weight:600">Total costo estimado</span>
+        <span style="font-size:15px;font-weight:700;color:var(--verde-dark)">${fmtMoney(totalCostos)}</span>
+      </div>`:''}
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-primary" onclick="imprimirListaCompras()">🖨 Imprimir</button>
+        <button class="btn" onclick="document.getElementById('compras-modal').remove()">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',e=>{ if(e.target===div) div.remove(); });
+}
+
+function imprimirListaCompras(){
+  const modal=document.getElementById('compras-modal');
+  if(!modal) return;
+  const content=modal.querySelector('.modal-box').innerHTML;
+  const w=window.open('','_blank','width=600,height=800');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lista de compras</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px;font-size:13px}
+  input[type=checkbox]{width:14px;height:14px}
+  .modal-title{font-size:18px;font-weight:bold;margin-bottom:12px}
+  button{display:none}</style></head><body>${content}</body></html>`);
+  w.document.close();
+  w.print();
+}
+
+// ===== HISTORIAL DE VERSIONES =====
+function mostrarHistorial(){
+  const p=getPpto(state.currentId); if(!p) return;
+  const hist=(p.historial||[]).slice().reverse();
+  const existing=document.getElementById('hist-modal');
+  if(existing) existing.remove();
+  const div=document.createElement('div');
+  div.id='hist-modal';
+  div.className='modal-overlay';
+  div.innerHTML=`
+    <div class="modal-box" style="max-width:460px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div class="modal-title" style="margin:0">📋 Historial de versiones</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('hist-modal').remove()">✕</button>
+      </div>
+      ${hist.length===0?'<div style="color:var(--text-hint);text-align:center;padding:1rem">Guardá el presupuesto para registrar versiones</div>':
+        hist.map((h,i)=>`<div class="hist-item">
+          <span class="hist-num">v${hist.length-i}</span>
+          <span class="hist-fecha">${h.fecha}</span>
+          <span class="badge badge-${h.estado||'borrador'}" style="margin-left:6px">${estadoLabel(h.estado)}</span>
+          <div style="margin-top:3px;color:var(--text-soft);font-size:11px">${fmtMoney(h.total)} · ${h.resumen||''}</div>
+        </div>`).join('')
+      }
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button class="btn" onclick="document.getElementById('hist-modal').remove()">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',e=>{ if(e.target===div) div.remove(); });
 }
 
 // ===== INIT =====
