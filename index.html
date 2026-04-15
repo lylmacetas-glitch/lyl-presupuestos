@@ -1324,30 +1324,280 @@ function generarPDF(){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:'mm',format:'a4'});
   const W=210;
-  const verde=[122,144,85], verdeD=[90,110,58], blanco=[255,255,255];
-  const grisC=[245,247,240], grisT=[100,110,80], negro=[30,32,24];
+  // Paleta refinada
+  const verde=[122,144,85];      // #7a9055
+  const verdeD=[74,94,40];       // #4a5e28
+  const verdePale=[240,244,232]; // franja cliente
+  const verdeBorder=[220,232,188];
+  const verdeAccent=[138,158,95];
+  const blanco=[255,255,255];
+  const negroSuave=[42,46,30];
+  const grisT=[100,110,80];
+  const grisTexto=[90,100,74];
+
   const mostrarPrecios=p.mostrar_precios!==false;
   const mostrarUsd=p.mostrar_usd!==false;
 
-  // HEADER
-  doc.setFillColor(...verde); doc.rect(0,0,W,42,'F');
-  doc.setTextColor(...blanco); doc.setFont('helvetica','bold'); doc.setFontSize(22);
-  doc.text('LyL Macetas Paisajismo',20,18);
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text('lylmacetas.com.ar',20,25);
-  doc.setFont('helvetica','bold'); doc.setFontSize(13);
-  doc.text(`Presupuesto N° ${String(p.num).padStart(3,'0')}`,W-20,15,{align:'right'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text(p.fecha||'',W-20,22,{align:'right'});
-  doc.text(`Válido por ${p.nota_validez||7} días`,W-20,29,{align:'right'});
+  // ── BARRA TOP ──
+  doc.setFillColor(...verde); doc.rect(0,0,W,3,'F');
 
-  let y=52;
-  doc.setFillColor(...grisC); doc.rect(14,y-5,W-28,20,'F');
-  doc.setTextColor(...negro); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  doc.text('Cliente:',18,y+2); doc.setFont('helvetica','normal'); doc.text(p.cliente||'—',42,y+2);
-  doc.setFont('helvetica','bold'); doc.text('Proyecto:',18,y+9); doc.setFont('helvetica','normal'); doc.text(p.proyecto||'—',46,y+9);
-  doc.setFont('helvetica','bold'); doc.text('Tipo:',18,y+16); doc.setFont('helvetica','normal'); doc.text(p.tipo||'—',33,y+16);
-  y+=26;
+  // ── HEADER BLANCO ──
+  // Ícono (cuadrado verde redondeado + hojas)
+  const ix=14, iy=8, is=16;
+  doc.setFillColor(...verde); doc.roundedRect(ix,iy,is,is,2,2,'F');
+  // Hoja izq
+  doc.setFillColor(...blanco);
+  doc.triangle(ix+3,iy+10, ix+8,iy+3, ix+8,iy+10,'F');
+  // Hoja der
+  doc.triangle(ix+13,iy+10, ix+8,iy+3, ix+8,iy+10,'F');
+  // Tallo
+  doc.setDrawColor(...blanco); doc.setLineWidth(0.8);
+  doc.line(ix+8,iy+10,ix+8,iy+14);
+  // Maceta
+  doc.setFillColor(...blanco);
+  doc.rect(ix+5,iy+12,6,4,'F');
+
+  // Nombre y tagline
+  doc.setTextColor(...verdeD);
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('LyL',ix+is+6,iy+8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(16);
+  doc.text(' Macetas',ix+is+16,iy+8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.setTextColor(...verdeAccent);
+  doc.text('Vivero · Macetas · Paisajismo',ix+is+6,iy+13);
+  // Datos de contacto bajo tagline
+  doc.setFontSize(6.5); doc.setTextColor(...grisT);
+  doc.text('📍 Congreso 3278, Nuñez CABA   @lylmacetas   lylmacetas.com.ar',ix+is+6,iy+18);
+
+  // Bloque número presupuesto (derecha)
+  const bx=W-58, by=7, bw=44, bh=22;
+  doc.setFillColor(...verdePale); doc.roundedRect(bx,by,bw,bh,2,2,'F');
+  doc.setDrawColor(...verdeBorder); doc.setLineWidth(0.3);
+  doc.roundedRect(bx,by,bw,bh,2,2,'S');
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...verdeAccent);
+  doc.text('PRESUPUESTO',bx+bw/2,by+5,{align:'center'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...verdeD);
+  doc.text(`N° ${String(p.num).padStart(3,'0')}`,bx+bw/2,by+12,{align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...grisT);
+  doc.text(p.fecha||'',bx+bw/2,by+17,{align:'center'});
+  doc.setTextColor(...verdeAccent);
+  doc.text(`Válido ${p.nota_validez||7} días`,bx+bw/2,by+21,{align:'center'});
+
+  // Línea separadora bajo header
+  doc.setDrawColor(...verdeBorder); doc.setLineWidth(0.4);
+  doc.line(14,30,W-14,30);
+
+  // ── FRANJA CLIENTE ──
+  let y=33;
+  doc.setFillColor(...verdePale); doc.rect(14,y,W-28,14,'F');
+  doc.setDrawColor(...verdeBorder); doc.setLineWidth(0.3);
+  doc.rect(14,y,W-28,14,'S');
+  const cols3=[14,84,154];
+  const labels3=['CLIENTE','PROYECTO','TIPO'];
+  const vals3=[p.cliente||'—', p.proyecto||'—', p.tipo||'—'];
+  labels3.forEach((lbl,i)=>{
+    doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(...verdeAccent);
+    doc.text(lbl,cols3[i]+4,y+5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...negroSuave);
+    doc.text(String(vals3[i]).substring(0,20),cols3[i]+4,y+11);
+  });
+  // Separadores verticales
+  doc.setDrawColor(...verdeBorder);
+  doc.line(82,y+2,82,y+12);
+  doc.line(152,y+2,152,y+12);
+
+  y+=20;
+
+  // ── FUNCIÓN SECCIÓN ──
+  function seccion(titulo, items, numSec){
+    if(!items||items.length===0||items.every(i=>!i.desc)) return;
+    if(y>250){doc.addPage();addPageHeader();y=30;}
+    // Punto + título sección
+    doc.setFillColor(...verde); doc.circle(17,y,2,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...verdeD);
+    doc.text(`${numSec}. ${titulo.toUpperCase()}`,22,y+1); y+=6;
+    // Cabecera tabla
+    doc.setFillColor(...verdePale); doc.rect(14,y-3,W-28,6,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...verdeAccent);
+    doc.text('DESCRIPCIÓN',17,y+1);
+    doc.text('OBSERVACIONES',80,y+1);
+    doc.text('CANT',126,y+1,{align:'right'});
+    if(mostrarPrecios){
+      doc.text('P. UNIT.',156,y+1,{align:'right'});
+      doc.text('TOTAL',W-16,y+1,{align:'right'});
+    }
+    // Línea bajo cabecera
+    doc.setDrawColor(...verdeBorder); doc.setLineWidth(0.3);
+    doc.line(14,y+3,W-14,y+3);
+    y+=7;
+    let sub=0;
+    items.filter(i=>i.desc).forEach((item,idx)=>{
+      if(y>262){doc.addPage();addPageHeader();y=30;}
+      const pUnit=item.margen>0?Math.round((item.costo||0)*(1+(item.margen||0)/100)):(item.precio||0);
+      const tot=(item.cant||1)*pUnit; sub+=tot;
+      if(idx%2===0){ doc.setFillColor(252,254,249); doc.rect(14,y-3,W-28,6,'F'); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...negroSuave);
+      doc.text(String(item.desc||'').substring(0,26),17,y+1);
+      if(item.obs){ doc.setTextColor(...grisT); doc.setFontSize(7); doc.text(String(item.obs).substring(0,20),80,y+1); doc.setTextColor(...negroSuave); doc.setFontSize(8); }
+      doc.text(String(item.cant||1),126,y+1,{align:'right'});
+      if(mostrarPrecios){
+        doc.setTextColor(...grisT);
+        doc.text('$'+Math.round(pUnit).toLocaleString('es-AR'),156,y+1,{align:'right'});
+        doc.setFont('helvetica','bold'); doc.setTextColor(...verdeD);
+        doc.text('$'+Math.round(tot).toLocaleString('es-AR'),W-16,y+1,{align:'right'});
+      }
+      doc.setDrawColor(235,240,225); doc.setLineWidth(0.2);
+      doc.line(14,y+3,W-14,y+3);
+      y+=6;
+    });
+    if(mostrarPrecios){
+      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...verdeD);
+      doc.text('Subtotal: $'+Math.round(sub).toLocaleString('es-AR'),W-16,y+2,{align:'right'});
+      y+=6;
+    } else { y+=3; }
+    y+=3;
+  }
+
+  // Header que se repite en páginas adicionales
+  function addPageHeader(){
+    doc.setFillColor(...verde); doc.rect(0,0,W,3,'F');
+    doc.setFillColor(...verdePale); doc.rect(14,6,W-28,8,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...verdeD);
+    doc.text('LyL Macetas — continuación',17,12);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...grisT);
+    doc.text(`N° ${String(p.num).padStart(3,'0')} · ${p.cliente||''}`,W-16,12,{align:'right'});
+  }
+
+  seccion('Plantas',p.plantas,1);
+  seccion('Macetas',p.macetas||[],2);
+  seccion('Sustratos e insumos',p.extras,3);
+  seccion('Logística y envío',p.logistica,4);
+
+  const pePdf=(item)=>{ const m=item.margen||0; return m>0?Math.round((item.costo||0)*(1+m/100)):(item.precio||0); };
+  const subPlantas=(p.plantas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
+  const subMacetas=(p.macetas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
+  const subExtras=(p.extras||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
+  const subLog=(p.logistica||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
+  const subMO=(p.mo_jornadas||1)*(p.mo_precio||0);
+  const base=subPlantas+subMacetas+subExtras+subLog+subMO;
+  const honoPct=p.hono_pct||0;
+  const subHono=honoPct>0?base*honoPct/100:0;
+  const comisionesPdf=p.comisiones||[];
+  const subCommPdf=comisionesPdf.reduce((s,cc)=>s+(cc.pct||0),0);
+  const montoCommPdf=subCommPdf>0?(base+subHono)*subCommPdf/100:0;
+  const total=base+subHono+montoCommPdf;
+
+  if(y>235){doc.addPage();addPageHeader();y=30;}
+
+  // ── MANO DE OBRA ──
+  doc.setFillColor(...verde); doc.circle(17,y,2,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...verdeD);
+  doc.text('5. MANO DE OBRA Y HONORARIOS',22,y+1); y+=6;
+  if(mostrarPrecios){
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...negroSuave);
+    doc.setFillColor(252,254,249); doc.rect(14,y-3,W-28,6,'F');
+    doc.text(`Mano de obra (${p.mo_jornadas||1} jornada${(p.mo_jornadas||1)>1?'s':''})`,17,y+1);
+    if(subMO>0){ doc.setFont('helvetica','bold'); doc.setTextColor(...verdeD); doc.text('$'+Math.round(subMO).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); } y+=6;
+    if(subHono>0){
+      doc.setFont('helvetica','normal'); doc.setTextColor(...negroSuave);
+      doc.text(`Honorarios paisajismo (${honoPct}%)`,17,y+1);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...verdeD);
+      doc.text('$'+Math.round(subHono).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); y+=6;
+    }
+    if(montoCommPdf>0){
+      doc.setFont('helvetica','normal'); doc.setTextColor(...negroSuave);
+      doc.text(`Comisiones (${subCommPdf.toFixed(1)}%)`,17,y+1);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...verdeD);
+      doc.text('$'+Math.round(montoCommPdf).toLocaleString('es-AR'),W-16,y+1,{align:'right'}); y+=6;
+    }
+  } else { y+=4; }
+  y+=4;
+
+  // ── TOTAL ──
+  if(y>240){doc.addPage();addPageHeader();y=30;}
+  doc.setDrawColor(...verde); doc.setLineWidth(1);
+  doc.line(14,y,W-14,y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...grisTexto);
+  doc.text('TOTAL DEL PRESUPUESTO',18,y+1);
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(...verdeD);
+  doc.text('$'+Math.round(total).toLocaleString('es-AR'),W-16,y+2,{align:'right'}); y+=10;
+  // Línea punteada anticipo/saldo
+  doc.setDrawColor(...verdeBorder); doc.setLineWidth(0.3);
+  doc.setLineDashPattern([1,1.5],0);
+  doc.line(14,y,W-14,y);
+  doc.setLineDashPattern([],0);
+  y+=4;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...grisT);
+  doc.text(`Anticipo 70%: $${Math.round(total*.7).toLocaleString('es-AR')}`,18,y);
+  doc.text(`Saldo 30%: $${Math.round(total*.3).toLocaleString('es-AR')}`,80,y);
+  if(mostrarUsd) doc.text(`≈ USD ${Math.round(total/(p.tc||1425)).toLocaleString('es-AR')} · TC $${(p.tc||1425).toLocaleString('es-AR')}`,W-16,y,{align:'right'});
+  y+=10;
+
+  // ── NOTAS ──
+  if(y>240){doc.addPage();addPageHeader();y=30;}
+  doc.setFillColor(...verdePale); doc.rect(14,y-2,W-28,5,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...verdeD);
+  doc.text('CONDICIONES Y NOTAS',17,y+2); y+=8;
+
+  [{label:'El servicio incluye:',val:p.nota_incluye},{label:'Forma de pago:',val:p.nota_pago},{label:'Garantía:',val:p.nota_garantia},{label:'Aclaración sobre plantas:',val:p.nota_plantas}]
+    .filter(n=>n.val).forEach(nota=>{
+      if(y>265){doc.addPage();addPageHeader();y=30;}
+      doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...verdeD);
+      doc.text(nota.label,17,y); y+=4;
+      doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...negroSuave);
+      doc.splitTextToSize(nota.val,W-34).forEach(line=>{
+        if(y>270){doc.addPage();addPageHeader();y=30;}
+        doc.text(line,17,y); y+=4;
+      }); y+=2;
+    });
+
+  // ── GALERÍA ──
+  const itemsConFoto=[
+    ...(p.plantas||[]).filter(i=>i.desc&&i.img).map(i=>({...i,_sec:'Planta'})),
+    ...(p.macetas||[]).filter(i=>i.desc&&i.img).map(i=>({...i,_sec:'Maceta'}))
+  ];
+  if(itemsConFoto.length>0){
+    doc.addPage(); addPageHeader(); let gy=28;
+    doc.setFillColor(...verdePale); doc.rect(14,gy-2,W-28,6,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...verdeD);
+    doc.text('IMÁGENES DE REFERENCIA',17,gy+2); gy+=12;
+    const imgW=54, imgH=44, cols=3, gap=5;
+    itemsConFoto.forEach((item,i)=>{
+      const col=i%cols, row=Math.floor(i/cols);
+      const x=14+col*(imgW+gap), iy2=gy+row*(imgH+14);
+      if(iy2+imgH+14>278) return;
+      try{ doc.addImage(item.img,'JPEG',x,iy2,imgW,imgH,'','FAST'); }catch(e){}
+      doc.setFillColor(...verdePale); doc.rect(x,iy2+imgH,imgW,10,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...verdeD);
+      doc.text(String(item.desc||'').substring(0,22),x+imgW/2,iy2+imgH+5,{align:'center'});
+      if(item.obs){ doc.setFont('helvetica','normal'); doc.setTextColor(...grisT); doc.text(String(item.obs).substring(0,22),x+imgW/2,iy2+imgH+9,{align:'center'}); }
+    });
+  }
+
+  // ── FOOTER TODAS LAS PÁGINAS ──
+  const totalPages=doc.getNumberOfPages();
+  for(let i=1;i<=totalPages;i++){
+    doc.setPage(i);
+    // Barra inferior verde
+    doc.setFillColor(...verde); doc.rect(0,284,W,13,'F');
+    // Ícono pequeño en footer
+    doc.setFillColor(255,255,255,0.3);
+    // Info izquierda
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...blanco);
+    doc.text('LyL Macetas Paisajismo',14,290);
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.5);
+    doc.text('Vivero · Macetas · Paisajismo',14,294.5);
+    // Info derecha
+    doc.setTextColor(220,235,195);
+    doc.text('Congreso 3278, Nuñez CABA  |  +54 11 1157554899  |  @lylmacetas  |  lylmacetas.com.ar',W-14,292,{align:'right'});
+    // Página
+    doc.setTextColor(200,220,170); doc.setFontSize(6);
+    doc.text(`${i} / ${totalPages}`,W/2,292,{align:'center'});
+  }
+
+  doc.save(`LyL_Ppto_${String(p.num).padStart(3,'0')}_${(p.cliente||'cliente').replace(/\s+/g,'-')}.pdf`);
+}
 
   function seccion(titulo, items, numSec){
     if(!items||items.length===0||items.every(i=>!i.desc)) return;
