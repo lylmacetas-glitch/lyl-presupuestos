@@ -948,7 +948,7 @@ function renderItems(cat, items){
   cont.innerHTML=items.map((item,i)=>{
     const costo=item.costo||0;
     const margen=item.margen!=null?item.margen:0;
-    const precioVenta=margen>0 ? Math.round(costo*(1+margen/100)) : (item.precio||0);
+    const precioVenta=margen>0 ? Math.round(costo*(1+margen/100)) : (costo>0 ? costo : (item.precio||0));
     const subtotal=(item.cant||1)*precioVenta;
     const fotoHtml=conFoto?(item.img
       ?`<img src="${item.img}" class="img-thumb" onclick="opcionesImg('${cat}',${i})" title="Click para opciones">`
@@ -989,14 +989,14 @@ function updateItem(cat,idx,field,val){
     const item=p[cat][idx];
     const costo=item.costo||0;
     const margen=item.margen||0;
-    item.precio=margen>0 ? Math.round(costo*(1+margen/100)) : (item.precio||0);
+    item.precio=margen>0 ? Math.round(costo*(1+margen/100)) : (costo>0 ? costo : (item.precio||0));
   }
   save();
   if(field==='cant'||field==='margen'||field==='precio'){
     const rows=document.getElementById('items-'+cat).querySelectorAll('.item-row');
     if(rows[idx]){
       const item=p[cat][idx];
-      const precio=item.margen>0?Math.round((item.costo||0)*(1+item.margen/100)):(item.precio||0);
+      const precio=item.margen>0?Math.round((item.costo||0)*(1+item.margen/100)):((item.costo||0)>0?(item.costo||0):(item.precio||0));
       const tot=rows[idx].querySelector('.item-total');
       if(tot) tot.textContent=fmtMoney((item.cant||1)*precio);
     }
@@ -1011,11 +1011,13 @@ function updateItemCosto(cat,idx,val){
   const margen=item.margen||0;
   if(margen>0){
     item.precio=Math.round(val*(1+margen/100));
+  } else {
+    item.precio=val; // sin margen, precio = costo
   }
   save();
   const rows=document.getElementById('items-'+cat).querySelectorAll('.item-row');
   if(rows[idx]){
-    const precio=margen>0?Math.round(val*(1+margen/100)):(item.precio||0);
+    const precio=margen>0?Math.round(val*(1+margen/100)):(val>0?val:(item.precio||0));
     const tot=rows[idx].querySelector('.item-total');
     if(tot) tot.textContent=fmtMoney((item.cant||1)*precio);
   }
@@ -1119,7 +1121,8 @@ function calcTotales(){
   // Precio efectivo por ítem = si tiene margen, costo*(1+margen/100); si no, precio manual
   const precioEfectivo=(item)=>{
     const m=item.margen||0;
-    return m>0 ? Math.round((item.costo||0)*(1+m/100)) : (item.precio||0);
+    const co=item.costo||0;
+    return m>0 ? Math.round(co*(1+m/100)) : (co>0 ? co : (item.precio||0));
   };
 
   const subPlantas=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*precioEfectivo(i),0);
@@ -1171,7 +1174,7 @@ function calcTotales(){
 // ===== GANANCIA =====
 function renderGanancia(){
   const p=getPpto(state.currentId); if(!p) return;
-  const pe=(item)=>{ const m=item.margen||0; return m>0?Math.round((item.costo||0)*(1+m/100)):(item.precio||0); };
+  const pe=(item)=>{ const m=item.margen||0; const co=item.costo||0; return m>0?Math.round(co*(1+m/100)):(co>0?co:(item.precio||0)); };
 
   // Auto-calcular costos desde los ítems (suma de costo×cant por sección)
   const costoItemsPlantas=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0);
@@ -1383,20 +1386,32 @@ function generarPDF(){
   doc.setFillColor(...verde); doc.rect(0,0,W,3,'F');
 
   // ── HEADER BLANCO ──
-  // Ícono (cuadrado verde redondeado + hojas)
-  const ix=14, iy=8, is=16;
-  doc.setFillColor(...verde); doc.roundedRect(ix,iy,is,is,2,2,'F');
-  // Hoja izq
-  doc.setFillColor(...blanco);
-  doc.triangle(ix+3,iy+10, ix+8,iy+3, ix+8,iy+10,'F');
-  // Hoja der
-  doc.triangle(ix+13,iy+10, ix+8,iy+3, ix+8,iy+10,'F');
-  // Tallo
-  doc.setDrawColor(...blanco); doc.setLineWidth(0.8);
-  doc.line(ix+8,iy+10,ix+8,iy+14);
-  // Maceta
-  doc.setFillColor(...blanco);
-  doc.rect(ix+5,iy+12,6,4,'F');
+  // Ícono LyL — maceta geométrica + 3 hojas (fiel al logo original)
+  const ix=14, iy=6, is=22;
+  // Fondo círculo verde
+  doc.setFillColor(...verde); doc.circle(ix+is/2, iy+is/2, is/2, 'F');
+  // Dibujar con líneas blancas
+  doc.setDrawColor(...blanco); doc.setLineWidth(0.5);
+  // -- MACETA geométrica (hexágono facetado) --
+  const mx=ix+is/2, myBase=iy+is-3;
+  // Cuerpo superior maceta (trapecio)
+  doc.lines([[-3,0],[-1,-4],[8,0],[1,4]],mx-4,myBase-4,null,'S',true);
+  // Cuerpo inferior maceta
+  doc.lines([[-2,0],[0,3],[4,0],[0,-3]],mx-2,myBase-4,null,'S',true);
+  // línea central vertical maceta
+  doc.line(mx,myBase-8,mx,myBase-4);
+  // línea diagonal izq maceta
+  doc.line(mx-3,myBase-4,mx-1,myBase-6);
+  // -- HOJA CENTRAL (arriba) --
+  const hcy=iy+5;
+  doc.lines([[0,-3],[2,-2],[2,2],[0,3],[-2,2],[-2,-2]],mx,hcy,null,'S',true);
+  doc.line(mx,hcy-3,mx,hcy+3); doc.line(mx-2,hcy,mx+2,hcy);
+  // -- HOJA IZQUIERDA --
+  doc.lines([[0,-2],[2,-2],[1,2],[0,2],[-1,2]],mx-4,hcy+1,null,'S',true);
+  doc.line(mx-4,hcy-1,mx-4,hcy+2); doc.line(mx-5,hcy,mx-3,hcy+1);
+  // -- HOJA DERECHA --
+  doc.lines([[0,-2],[-2,-2],[-1,2],[0,2],[1,2]],mx+4,hcy+1,null,'S',true);
+  doc.line(mx+4,hcy-1,mx+4,hcy+2); doc.line(mx+3,hcy,mx+5,hcy+1);
 
   // Nombre y tagline
   doc.setTextColor(...verdeD);
@@ -1409,7 +1424,7 @@ function generarPDF(){
   doc.text('Vivero · Macetas · Paisajismo',ix+is+6,iy+13);
   // Datos de contacto bajo tagline
   doc.setFontSize(6.5); doc.setTextColor(...grisT);
-  doc.text('📍 Congreso 3278, Nuñez CABA   @lylmacetas   lylmacetas.com.ar',ix+is+6,iy+18);
+  doc.text('Congreso 3278, Nuñez CABA   |   @lylmacetas   |   lylmacetas.com.ar',ix+is+6,iy+18);
 
   // Bloque número presupuesto (derecha)
   const bx=W-58, by=7, bw=44, bh=22;
@@ -1475,7 +1490,7 @@ function generarPDF(){
     let sub=0;
     items.filter(i=>i.desc).forEach((item,idx)=>{
       if(y>262){doc.addPage();addPageHeader();y=30;}
-      const pUnit=item.margen>0?Math.round((item.costo||0)*(1+(item.margen||0)/100)):(item.precio||0);
+      const pUnit=item.margen>0?Math.round((item.costo||0)*(1+(item.margen||0)/100)):((item.costo||0)>0?(item.costo||0):(item.precio||0));
       const tot=(item.cant||1)*pUnit; sub+=tot;
       if(idx%2===0){ doc.setFillColor(252,254,249); doc.rect(14,y-3,W-28,6,'F'); }
       doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...negroSuave);
@@ -1515,7 +1530,7 @@ function generarPDF(){
   seccion('Sustratos e insumos',p.extras,3);
   seccion('Logística y envío',p.logistica,4);
 
-  const pePdf=(item)=>{ const m=item.margen||0; return m>0?Math.round((item.costo||0)*(1+m/100)):(item.precio||0); };
+  const pePdf=(item)=>{ const m=item.margen||0; const co=item.costo||0; return m>0?Math.round(co*(1+m/100)):(co>0?co:(item.precio||0)); };
   const subPlantas=(p.plantas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
   const subMacetas=(p.macetas||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
   const subExtras=(p.extras||[]).filter(i=>i.desc).reduce((s,i)=>s+(i.cant||1)*pePdf(i),0);
