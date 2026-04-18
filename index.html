@@ -1219,28 +1219,28 @@ function renderGanancia(){
     const gan=sec.cobrado-costoDisplay;
     const pct=sec.cobrado>0?Math.round(gan/sec.cobrado*100):0;
     const ganColor=gan>=0?'var(--verde-dark)':'#c0392b';
-    const autoTag=sec.auto>0?'<span style="font-size:10px;background:var(--verde-light);color:var(--verde-dark);padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600">auto</span>':'';
-    return '<div style="display:grid;grid-template-columns:1fr 100px 100px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
-      +'<div>'
-      +'<div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:4px">'+sec.label+autoTag+'</div>'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<span style="font-size:11px;color:var(--text-hint)">Costo:</span>'
-      +'<input type="number" value="'+(costoDisplay||'')+'" placeholder="'+(sec.auto>0?fmtMoney(sec.auto):'$0')+'"'
-      +' oninput="updateCosto(''+sec.key+'',parseFloat(this.value)||0)"'
-      +' style="width:100px;padding:4px 8px;font-size:12px;background:var(--verde-light);border-color:var(--verde-mid)">'
-      +'</div>'
-      +(sec.auto>0?'<div style="font-size:10px;color:var(--text-hint);margin-top:2px">Desde items: '+fmtMoney(sec.auto)+'</div>':'')
-      +'</div>'
-      +'<div style="text-align:right">'
-      +'<div style="font-size:10px;color:var(--text-hint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Cobrado</div>'
-      +'<div style="font-size:14px;font-weight:600;color:var(--text-primary)">'+fmtMoney(sec.cobrado)+'</div>'
-      +'</div>'
-      +'<div style="text-align:right">'
-      +'<div style="font-size:10px;color:var(--text-hint);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Ganancia</div>'
-      +'<div style="font-size:15px;font-weight:700;color:'+ganColor+'">'+fmtMoney(gan)+'</div>'
-      +'<div style="font-size:10px;color:var(--text-hint)">'+pct+'%</div>'
-      +'</div>'
-      +'</div>';
+    const autoTag=sec.auto>0?`<span style="font-size:10px;background:var(--verde-light);color:var(--verde-dark);padding:1px 6px;border-radius:4px;margin-left:4px">auto</span>`:'';
+    return `<div style="display:grid;grid-template-columns:1fr 100px 100px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:4px">${sec.label}${autoTag}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--text-hint)">Costo:</span>
+          <input type="number" value="${costoDisplay||''}" placeholder="${sec.auto>0?fmtMoney(sec.auto):'$0'}"
+            oninput="updateCosto('${sec.key}',parseFloat(this.value)||0)"
+            style="width:100px;padding:4px 8px;font-size:12px;background:var(--verde-light);border-color:var(--verde-mid)">
+        </div>
+        ${sec.auto>0?`<div style="font-size:10px;color:var(--text-hint);margin-top:2px">Desde items: ${fmtMoney(sec.auto)}</div>`:''}
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--text-hint);font-weight:600;text-transform:uppercase;margin-bottom:3px">Cobrado</div>
+        <div style="font-size:14px;font-weight:600">${fmtMoney(sec.cobrado)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--text-hint);font-weight:600;text-transform:uppercase;margin-bottom:3px">Ganancia</div>
+        <div style="font-size:15px;font-weight:700;color:${ganColor}">${fmtMoney(gan)}</div>
+        <div style="font-size:10px;color:var(--text-hint)">${pct}%</div>
+      </div>
+    </div>`;
   }).join('');
 
   const costoTotal=secciones.reduce((s,sec)=>s+(sec.auto>0?sec.auto:(cs[sec.key]||0)),0);
