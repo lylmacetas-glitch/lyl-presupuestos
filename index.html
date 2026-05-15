@@ -307,7 +307,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab(this,'tab-items')">Ítems y totales</button>
-    <button class="tab" onclick="switchTab(this,'tab-interno')">⚠ Interno</button>
+    <button class="tab" onclick="switchTab(this,'tab-obra')">📋 Resumen de obra</button>
     <button class="tab" onclick="switchTab(this,'tab-notas')">Notas</button>
     <button class="tab" onclick="switchTab(this,'tab-info')">Info</button>
   </div>
@@ -456,7 +456,6 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
       <button class="btn" onclick="duplicarPpto()">📋 Duplicar</button>
       <button class="btn" onclick="showScreen('lista')">← Lista</button>
       <span style="flex:1"></span>
-      <button class="btn" onclick="mostrarListaCompras()">🛒 Lista de compras</button>
       <button class="btn" onclick="mostrarCalcTierra()">🌱 Tierra</button>
       <button class="btn" onclick="mostrarCalcCombustible()">⛽ Combustible</button>
       <button class="btn btn-primary btn-lg" onclick="generarPDF()">📄 Generar PDF</button>
@@ -465,31 +464,46 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
   </div>
 
   <!-- TAB INTERNO -->
-  <div id="tab-interno" style="display:none">
-    <div class="interno-box">
-      <div class="interno-title">🔒 Solo interno — no aparece en el PDF del cliente</div>
+  <!-- TAB RESUMEN DE OBRA -->
+  <div id="tab-obra" style="display:none">
 
-      <div class="section-title" style="margin-bottom:8px">Ganancia por sección</div>
-      <div style="font-size:12px;color:var(--warn-text);margin-bottom:10px">Ingresá el costo real de cada sección para ver tu margen</div>
-      <div id="ganancia-rows"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--verde-light);border-radius:var(--radius);margin-top:10px;border:1px solid var(--verde-mid)">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--verde-dark)">Ganancia total estimada</div>
-          <div style="font-size:11px;color:var(--text-hint);margin-top:2px" id="ganancia-margen">—</div>
-        </div>
-        <span style="font-size:20px;font-weight:700;color:var(--verde-dark)" id="ganancia-total">$0</span>
-      </div>
-      <div class="hint" style="margin-top:6px">Total cobrado al cliente − costos reales ingresados</div>
-
-      <div class="divider"></div>
-
-      <div class="section-title" style="margin-bottom:8px">Comisiones (se suman al total del cliente)</div>
-      <div style="font-size:12px;color:var(--warn-text);margin-bottom:10px">El % total de comisiones se agrega al precio final del presupuesto</div>
-      <div id="comm-rows"></div>
-      <button class="btn btn-sm" onclick="addComm()" style="margin-top:8px">+ Agregar colaborador</button>
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:4px;margin:1rem 0 .75rem;border-bottom:1px solid var(--border)">
+      <button class="tab active" id="obra-tab-btn-compras" onclick="switchObraTab('compras')">🛒 Lista de compras</button>
+      <button class="tab" id="obra-tab-btn-cierre" onclick="switchObraTab('cierre')">📊 Cierre de obra</button>
+      <button class="tab" id="obra-tab-btn-comisiones" onclick="switchObraTab('comisiones')">👥 Comisiones</button>
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-primary" onclick="guardarPpto()">Guardar cambios</button>
+
+    <!-- LISTA DE COMPRAS -->
+    <div id="obra-compras">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text-soft)">Todos los ítems con precio unitario y total estimado</div>
+        <button class="btn btn-sm" onclick="imprimirObraCompras()">🖨 Imprimir</button>
+      </div>
+      <div id="obra-compras-contenido"></div>
+    </div>
+
+    <!-- CIERRE DE OBRA -->
+    <div id="obra-cierre" style="display:none">
+      <div style="background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--info-text)">
+        💡 Completá el <strong>costo real</strong> de cada ítem cuando termines el trabajo. Si no lo editás, usa el estimado del presupuesto.
+      </div>
+      <div id="obra-cierre-contenido"></div>
+      <div id="obra-resultado" style="margin-top:12px"></div>
+    </div>
+
+    <!-- COMISIONES -->
+    <div id="obra-comisiones" style="display:none">
+      <div class="interno-box">
+        <div class="interno-title">👥 Comisiones sobre el total del cliente</div>
+        <div style="font-size:12px;color:var(--warn-text);margin-bottom:10px">El % total se agrega al precio final del presupuesto</div>
+        <div id="comm-rows"></div>
+        <button class="btn btn-sm" onclick="addComm()" style="margin-top:8px">+ Agregar colaborador</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-primary" onclick="guardarPpto()">💾 Guardar</button>
     </div>
   </div>
 
@@ -661,10 +675,11 @@ function showScreen(id){
 function switchTab(btn, tabId){
   document.querySelectorAll('#screen-ver .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  ['tab-items','tab-interno','tab-notas','tab-info'].forEach(t=>{
+  ['tab-items','tab-obra','tab-notas','tab-info'].forEach(t=>{
     const el=document.getElementById(t);
     if(el) el.style.display=(t===tabId)?'block':'none';
   });
+  if(tabId==='tab-obra') renderObraCompras();
 }
 
 function switchMainTab(btn, tabId){
@@ -929,7 +944,7 @@ function abrirPpto(id){
   // reset tabs
   document.querySelectorAll('#screen-ver .tab').forEach(b=>b.classList.remove('active'));
   document.querySelector('#screen-ver .tab').classList.add('active');
-  ['tab-items','tab-interno','tab-notas','tab-info'].forEach((t,i)=>{
+  ['tab-items','tab-obra','tab-notas','tab-info'].forEach((t,i)=>{
     document.getElementById(t).style.display=i===0?'block':'none';
   });
 
@@ -2152,7 +2167,7 @@ function agregarTierraAlPpto(){
   // Ir a tab items
   document.querySelectorAll('#screen-ver .tab').forEach(b=>b.classList.remove('active'));
   document.querySelector('#screen-ver .tab').classList.add('active');
-  ['tab-items','tab-interno','tab-notas','tab-info'].forEach((t,i)=>{
+  ['tab-items','tab-obra','tab-notas','tab-info'].forEach((t,i)=>{
     const el=document.getElementById(t); if(el) el.style.display=i===0?'block':'none';
   });
   alert(`✅ Agregadas ${bolsas} bolsa${bolsas!==1?'s':''} de tierra (${bolsaLts} lts) a Sustratos`);
@@ -2273,10 +2288,240 @@ function agregarCombAlPpto(){
   document.getElementById('combustible-modal')?.remove();
   document.querySelectorAll('#screen-ver .tab').forEach(b=>b.classList.remove('active'));
   document.querySelector('#screen-ver .tab').classList.add('active');
-  ['tab-items','tab-interno','tab-notas','tab-info'].forEach((t,i)=>{
+  ['tab-items','tab-obra','tab-notas','tab-info'].forEach((t,i)=>{
     const el=document.getElementById(t); if(el) el.style.display=i===0?'block':'none';
   });
   alert(`✅ Agregado traslado ${fmtMoney(costo)} (${km} km) a Logística`);
+}
+
+// ===== RESUMEN DE OBRA =====
+function switchObraTab(tab){
+  ['compras','cierre','comisiones'].forEach(t=>{
+    const el=document.getElementById('obra-'+t);
+    const btn=document.getElementById('obra-tab-btn-'+t);
+    if(el) el.style.display=t===tab?'block':'none';
+    if(btn){ btn.classList.toggle('active', t===tab); }
+  });
+  if(tab==='compras') renderObraCompras();
+  if(tab==='cierre') renderObraCierre();
+}
+
+function renderObraCompras(){
+  const p=getPpto(state.currentId); if(!p) return;
+  const pe=(item)=>{ const m=item.margen||0; const co=item.costo||0; return m>0?Math.round(co*(1+m/100)):(co>0?co:(item.precio||0)); };
+
+  const secciones=[
+    {label:'🌿 Plantas', cat:'plantas', items:p.plantas||[]},
+    {label:'🪴 Macetas', cat:'macetas', items:p.macetas||[]},
+    {label:'🌱 Sustratos e insumos', cat:'extras', items:p.extras||[]},
+    {label:'🚚 Logística y envío', cat:'logistica', items:p.logistica||[]},
+  ];
+
+  let totalCosto=0, totalVenta=0;
+  let html='';
+
+  secciones.forEach(sec=>{
+    const filtrados=(sec.items||[]).filter(i=>i.desc);
+    if(!filtrados.length) return;
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-dark);letter-spacing:.08em;text-transform:uppercase;padding:5px 0;border-bottom:2px solid var(--verde-mid);margin-bottom:4px">${sec.label}</div>
+      <div style="display:grid;grid-template-columns:1fr 50px 80px 80px 24px;gap:6px;padding:3px 4px;background:var(--verde-light);border-radius:4px;margin-bottom:3px">
+        <div style="font-size:10px;font-weight:700;color:var(--verde-dark);text-transform:uppercase">Ítem</div>
+        <div style="font-size:10px;font-weight:700;color:var(--verde-dark);text-align:center;text-transform:uppercase">Cant.</div>
+        <div style="font-size:10px;font-weight:700;color:var(--verde-dark);text-align:right;text-transform:uppercase">P. Unit.</div>
+        <div style="font-size:10px;font-weight:700;color:var(--verde-dark);text-align:right;text-transform:uppercase">Total</div>
+        <div></div>
+      </div>`;
+
+    filtrados.forEach(item=>{
+      const pUnit=pe(item);
+      const tot=(item.cant||1)*pUnit;
+      const costoUnit=item.costo||0;
+      const costoTot=(item.cant||1)*costoUnit;
+      totalCosto+=costoTot;
+      totalVenta+=tot;
+      html+=`<div style="display:grid;grid-template-columns:1fr 50px 80px 80px 24px;gap:6px;align-items:center;padding:5px 4px;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:500">${esc(item.desc)}</div>
+          ${item.obs?`<div style="font-size:11px;color:var(--text-hint)">${esc(item.obs)}</div>`:''}
+        </div>
+        <div style="text-align:center;font-size:13px">${item.cant||1}</div>
+        <div style="text-align:right;font-size:13px">${fmtMoney(pUnit)}</div>
+        <div style="text-align:right;font-size:13px;font-weight:600;color:var(--verde-dark)">${fmtMoney(tot)}</div>
+        <input type="checkbox" style="width:16px;height:16px;cursor:pointer" title="Comprado">
+      </div>`;
+    });
+    html+='</div>';
+  });
+
+  // MO
+  const subMO=(p.mo_jornadas||1)*(p.mo_precio||0);
+  const honoPct=p.hono_pct||0;
+  const base=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+             (p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+             (p.extras||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+             (p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+subMO;
+  const subHono=honoPct>0?base*honoPct/100:0;
+  const comis=p.comisiones||[];
+  const montoComis=comis.reduce((s,cc)=>s+(cc.pct||0),0);
+  const montoComisTotal=montoComis>0?(base+subHono)*montoComis/100:0;
+  const totalCliente=base+subHono+montoComisTotal;
+
+  if(subMO>0||subHono>0){
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-dark);letter-spacing:.08em;text-transform:uppercase;padding:5px 0;border-bottom:2px solid var(--verde-mid);margin-bottom:4px">⚒ Mano de obra y honorarios</div>
+      ${subMO>0?`<div style="display:flex;justify-content:space-between;padding:5px 4px;border-bottom:1px solid var(--border)"><span style="font-size:13px">Mano de obra (${p.mo_jornadas||1} jornadas)</span><span style="font-size:13px;font-weight:600">${fmtMoney(subMO)}</span></div>`:''}
+      ${subHono>0?`<div style="display:flex;justify-content:space-between;padding:5px 4px;border-bottom:1px solid var(--border)"><span style="font-size:13px">Honorarios (${honoPct}%)</span><span style="font-size:13px;font-weight:600">${fmtMoney(subHono)}</span></div>`:''}
+    </div>`;
+  }
+
+  html+=`<div style="border-top:2px solid var(--verde-mid);padding-top:10px;margin-top:4px">
+    <div style="display:flex;justify-content:space-between;padding:4px 0">
+      <span style="font-size:12px;color:var(--text-soft)">Costo estimado de materiales</span>
+      <span style="font-size:13px;font-weight:600">${fmtMoney(totalCosto)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--border);margin-top:4px">
+      <span style="font-size:14px;font-weight:600;color:var(--verde-dark)">Total cobrado al cliente</span>
+      <span style="font-size:16px;font-weight:700;color:var(--verde-dark)">${fmtMoney(totalCliente)}</span>
+    </div>
+  </div>`;
+
+  document.getElementById('obra-compras-contenido').innerHTML=html;
+}
+
+function renderObraCierre(){
+  const p=getPpto(state.currentId); if(!p) return;
+  if(!p.costos_reales) p.costos_reales={};
+  const pe=(item)=>{ const m=item.margen||0; const co=item.costo||0; return m>0?Math.round(co*(1+m/100)):(co>0?co:(item.precio||0)); };
+
+  const secciones=[
+    {label:'🌿 Plantas', cat:'plantas', items:p.plantas||[]},
+    {label:'🪴 Macetas', cat:'macetas', items:p.macetas||[]},
+    {label:'🌱 Sustratos e insumos', cat:'extras', items:p.extras||[]},
+    {label:'🚚 Logística y envío', cat:'logistica', items:p.logistica||[]},
+  ];
+
+  let totalCostoReal=0, totalVenta=0;
+  let html='';
+
+  secciones.forEach(sec=>{
+    const filtrados=(sec.items||[]).filter(i=>i.desc);
+    if(!filtrados.length) return;
+    html+=`<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-dark);letter-spacing:.08em;text-transform:uppercase;padding:5px 0;border-bottom:2px solid var(--verde-mid);margin-bottom:6px">${sec.label}</div>`;
+
+    filtrados.forEach((item,i)=>{
+      const pVenta=pe(item);
+      const tot=(item.cant||1)*pVenta;
+      totalVenta+=tot;
+      const keyReal=`${sec.cat}_${i}`;
+      const costoEstimado=(item.costo||0)*(item.cant||1);
+      const costoReal=p.costos_reales[keyReal]!=null ? p.costos_reales[keyReal] : costoEstimado;
+      totalCostoReal+=costoReal;
+      const gan=tot-costoReal;
+      const ganColor=gan>=0?'var(--verde-dark)':'#c0392b';
+
+      html+=`<div style="display:grid;grid-template-columns:1fr 90px 90px 80px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:500">${esc(item.desc)}</div>
+          ${item.obs?`<div style="font-size:11px;color:var(--text-hint)">${esc(item.obs)} · cant: ${item.cant||1}</div>`:`<div style="font-size:11px;color:var(--text-hint)">Cant: ${item.cant||1}</div>`}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text-hint);margin-bottom:2px">Cobrado</div>
+          <div style="font-size:13px;font-weight:600">${fmtMoney(tot)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text-hint);margin-bottom:2px">Costo real</div>
+          <input type="number" value="${costoReal||''}" placeholder="${fmtMoney(costoEstimado)}"
+            oninput="updateCostoReal('${sec.cat}',${i},parseFloat(this.value)||0)"
+            style="width:100%;padding:4px 6px;font-size:12px;text-align:right;background:var(--warn-bg);border-color:var(--warn-border)">
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text-hint);margin-bottom:2px">Ganancia</div>
+          <div style="font-size:13px;font-weight:700;color:${ganColor}" id="gan-item-${sec.cat}-${i}">${fmtMoney(gan)}</div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+
+  document.getElementById('obra-cierre-contenido').innerHTML=html;
+
+  // Resultado final
+  const subMO=(p.mo_jornadas||1)*(p.mo_precio||0);
+  const honoPct=p.hono_pct||0;
+  const base=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+             (p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+             (p.extras||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+             (p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+subMO;
+  const subHono=honoPct>0?base*honoPct/100:0;
+  const comis=p.comisiones||[];
+  const montoComis=comis.reduce((s,cc)=>s+(cc.pct||0),0);
+  const totalCliente=base+subHono+(montoComis>0?(base+subHono)*montoComis/100:0);
+  const gananciaReal=totalCliente-totalCostoReal;
+  const margenReal=totalCliente>0?Math.round(gananciaReal/totalCliente*100):0;
+  const ganColor=gananciaReal>=0?'var(--verde-dark)':'#c0392b';
+
+  document.getElementById('obra-resultado').innerHTML=`
+    <div style="background:var(--verde-light);border:1.5px solid var(--verde-mid);border-radius:var(--radius-lg);padding:14px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-dark);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Cierre de obra</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px">Cobrado al cliente</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">${fmtMoney(totalCliente)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px">Costo real total</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">${fmtMoney(totalCostoReal)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px">Ganancia real</div>
+          <div style="font-size:18px;font-weight:700;color:${ganColor}">${fmtMoney(gananciaReal)}</div>
+          <div style="font-size:10px;color:var(--text-hint)">${margenReal}% del cobrado</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updateCostoReal(cat, idx, val){
+  const p=getPpto(state.currentId); if(!p) return;
+  if(!p.costos_reales) p.costos_reales={};
+  const key=`${cat}_${idx}`;
+  p.costos_reales[key]=val;
+  save();
+  renderObraCierre();
+}
+
+function imprimirObraCompras(){
+  const p=getPpto(state.currentId); if(!p) return;
+  const cont=document.getElementById('obra-compras-contenido');
+  if(!cont) return;
+  const w=window.open('','_blank','width=650,height=900');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lista de compras — ${p.cliente||''}</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px;font-size:13px;color:#222}
+  h2{font-size:16px;margin-bottom:4px}p{font-size:12px;color:#666;margin-bottom:16px}
+  input[type=checkbox]{width:15px;height:15px}button{display:none}</style></head>
+  <body><h2>Lista de compras — LyL Macetas</h2>
+  <p>${esc(p.cliente||'')} · ${esc(p.proyecto||'')} · Ppto. #${String(p.num).padStart(2,'0')}</p>
+  ${cont.innerHTML}</body></html>`);
+  w.document.close(); w.print();
+}
+
+// También actualizar renderGanancia para que use tab-obra
+function renderGanancia(){
+  // Esta función ahora solo actualiza datos internos, la UI está en renderObraCompras/renderObraCierre
+  const p=getPpto(state.currentId); if(!p) return;
+  // Mantener compatibilidad — actualizar ganancia-total si existe
+  const pe=(item)=>{ const m=item.margen||0; const co=item.costo||0; return m>0?Math.round(co*(1+m/100)):(co>0?co:(item.precio||0)); };
+  const totalVenta=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+    (p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+    (p.extras||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0)+
+    (p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*pe(i),0);
+  const autoCosto=(p.plantas||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0)+
+    (p.macetas||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0)+
+    (p.extras||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0)+
+    (p.logistica||[]).reduce((s,i)=>s+(i.cant||1)*(i.costo||0),0);
+  renderComisiones(p.comisiones||[]);
 }
 
 // ===== INIT =====
