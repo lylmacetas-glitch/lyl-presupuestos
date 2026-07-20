@@ -1666,22 +1666,37 @@ function generarPDF(){
     doc.setCharSpace(1.5); doc.text('IMÁGENES DE REFERENCIA',W/2,32,{align:'center'}); doc.setCharSpace(0);
     let gy=40;
     const imgW=58,imgH=48,cols=3,gap=4;
+    let col=0;
+
     itemsConFoto.forEach((item,i)=>{
-      const col=i%cols,row=Math.floor(i/cols);
-      const x=14+col*(imgW+gap),iy2=gy+row*(imgH+14);
-      if(iy2+imgH+14>276) return;
+      const x=14+col*(imgW+gap);
+
+      // Si no entra en la página actual, agregar nueva página
+      if(gy+imgH+14>278){
+        doc.addPage();
+        doc.setFillColor(...blanco); doc.rect(0,0,W,H,'F');
+        doc.setFillColor(...verdeOsc); doc.rect(0,0,W,3,'F');
+        try{ doc.addImage('data:image/png;base64,'+logoB64,'PNG',W/2-4,5,8,8); }catch(e){}
+        doc.setDrawColor(...verdeOsc); doc.setLineWidth(0.5); doc.line(14,16,W-14,16);
+        gy=22; col=0;
+      }
+
+      const cx=14+col*(imgW+gap);
       try{
         const tmpImg=new Image(); tmpImg.src=item.img;
         const nW=tmpImg.naturalWidth||imgW,nH=tmpImg.naturalHeight||imgH,ratio=nW/nH;
         let dW=imgW,dH=imgH;
         if(ratio>imgW/imgH){dH=imgW/ratio;}else{dW=imgH*ratio;}
-        doc.setFillColor(...grisAlt); doc.roundedRect(x,iy2,imgW,imgH,2,2,'F');
-        doc.addImage(item.img,'JPEG',x+(imgW-dW)/2,iy2+(imgH-dH)/2,dW,dH,'','FAST');
-        doc.setDrawColor(...verdeLine); doc.setLineWidth(0.3); doc.roundedRect(x,iy2,imgW,imgH,2,2,'S');
+        doc.setFillColor(...grisAlt); doc.roundedRect(cx,gy,imgW,imgH,2,2,'F');
+        doc.addImage(item.img,'JPEG',cx+(imgW-dW)/2,gy+(imgH-dH)/2,dW,dH,'','FAST');
+        doc.setDrawColor(...verdeLine); doc.setLineWidth(0.3); doc.roundedRect(cx,gy,imgW,imgH,2,2,'S');
       }catch(e){}
-      doc.setFillColor(...verdeOsc); doc.rect(x,iy2+imgH,imgW,9,'F');
+      doc.setFillColor(...verdeOsc); doc.rect(cx,gy+imgH,imgW,9,'F');
       doc.setFont('helvetica','bold'); doc.setFontSize(6.5); doc.setTextColor(...blanco);
-      doc.text(String(item.desc||'').substring(0,22),x+imgW/2,iy2+imgH+5.5,{align:'center'});
+      doc.text(String(item.desc||'').substring(0,22),cx+imgW/2,gy+imgH+5.5,{align:'center'});
+
+      col++;
+      if(col>=cols){ col=0; gy+=imgH+14; }
     });
   }
 
